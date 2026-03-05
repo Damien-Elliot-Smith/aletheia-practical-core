@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "case_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "claims_window_id": {
+      "type": "string"
+    },
+    "constraints_snapshot_sha256": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "created_utc": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "files": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sha256": {
+            "maxLength": 64,
+            "minLength": 64,
+            "type": "string"
+          },
+          "zip_path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "zip_path",
+          "sha256",
+          "bytes"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "omitted_windows": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "enum": [
+        "1"
+      ],
+      "type": "string"
+    },
+    "sealed_windows_included": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "tool": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ],
+      "type": "object"
+    },
+    "verify_ok": {
+      "type": "boolean"
+    },
+    "verify_report_sha256": {
+      "maxLength": 64,
+      "minLength": 64,
+      "type": "string"
+    },
+    "windows": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "event_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "first_hash": {
+            "type": "string"
+          },
+          "last_hash": {
+            "type": "string"
+          },
+          "seal_record_sha256": {
+            "maxLength": 64,
+            "minLength": 64,
+            "type": "string"
+          },
+          "sealed": {
+            "type": "boolean"
+          },
+          "window_content_sha256": {
+            "maxLength": 64,
+            "minLength": 64,
+            "type": "string"
+          },
+          "window_id": {
+            "type": "string"
+          },
+          "window_root_hash": {
+            "maxLength": 64,
+            "minLength": 64,
+            "type": "string"
+          }
+        },
+        "required": [
+          "window_id",
+          "sealed",
+          "seal_record_sha256",
+          "window_root_hash",
+          "event_count",
+          "first_hash",
+          "last_hash",
+          "window_content_sha256"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "case_id",
+    "created_utc",
+    "tool",
+    "verify_report_sha256",
+    "files",
+    "windows"
+  ],
+  "title": "Aletheia Case Manifest v1",
+  "type": "object"
+}

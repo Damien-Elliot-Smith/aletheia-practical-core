@@ -1,0 +1,97 @@
+{
+  "$id": "provenance://schemas/tool_plan/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "budgets": {
+      "additionalProperties": false,
+      "properties": {
+        "max_files_touched": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_runtime_seconds": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_total_bytes": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_files_touched",
+        "max_total_bytes",
+        "max_runtime_seconds"
+      ],
+      "type": "object"
+    },
+    "created_utc": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "plan_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "plan_id": {
+      "type": "string"
+    },
+    "schema_version": {
+      "pattern": "^1$",
+      "type": "string"
+    },
+    "steps": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "dst": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "op": {
+            "enum": [
+              "COPY",
+              "MOVE",
+              "DELETE",
+              "MKDIR"
+            ],
+            "type": "string"
+          },
+          "src": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "src",
+          "dst"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "workspace_root": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "plan_id",
+    "created_utc",
+    "workspace_root",
+    "budgets",
+    "steps",
+    "plan_hash"
+  ],
+  "title": "ToolPlan",
+  "type": "object"
+}

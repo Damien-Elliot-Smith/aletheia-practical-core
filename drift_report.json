@@ -1,0 +1,59 @@
+{
+  "created_utc": "2026-03-04T01:11:48Z",
+  "drift_id": "a3869e8cd716654ad94943db4704a19b3be806b6c09ef2ab8d9f7388d8362b76",
+  "results": [
+    {
+      "check_id": "DRIFT_VALIDATE_MANIFEST",
+      "details": {
+        "rc": 0
+      },
+      "errors": [],
+      "verdict": "PASS"
+    },
+    {
+      "check_id": "DRIFT_CALIBRATION_PACK",
+      "details": {
+        "out": "/storage/emulated/0/Provenance/core/Aletheia_v1_Practical_Core/_drift_calibration_report.json",
+        "rc": 0
+      },
+      "errors": [],
+      "verdict": "PASS"
+    },
+    {
+      "check_id": "DRIFT_REDTEAM_PACK",
+      "details": {
+        "out": "/storage/emulated/0/Provenance/core/Aletheia_v1_Practical_Core/_drift_redteam_report.json",
+        "rc": 0
+      },
+      "errors": [],
+      "verdict": "PASS"
+    },
+    {
+      "check_id": "DRIFT_CONSTRAINTS_ON_SAMPLE_ANSWER",
+      "details": {
+        "rc": 0,
+        "ruleset_id": "constraints_v1"
+      },
+      "errors": [],
+      "verdict": "PASS"
+    },
+    {
+      "check_id": "DRIFT_REPLAY_SAMPLE_ENV",
+      "details": {
+        "out": "/storage/emulated/0/Provenance/core/Aletheia_v1_Practical_Core/_drift_replay_report.json",
+        "rc": 0,
+        "replay_id": "dc0819807abad2d3f98002f69434c3d9edf1f310859269d051b9d10e75f6a429"
+      },
+      "errors": [],
+      "verdict": "PASS"
+    }
+  ],
+  "schema_version": "1",
+  "summary": {
+    "checks_error": 0,
+    "checks_fail": 0,
+    "checks_pass": 5,
+    "checks_total": 5
+  },
+  "verdict": "PASS"
+}

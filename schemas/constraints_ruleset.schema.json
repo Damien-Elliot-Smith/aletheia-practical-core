@@ -1,0 +1,27 @@
+{
+  "$id": "provenance://schemas/constraints_ruleset/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "rules": {
+      "items": {
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "ruleset_id": {
+      "type": "string"
+    },
+    "schema_version": {
+      "pattern": "^1$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "ruleset_id",
+    "rules"
+  ],
+  "title": "ConstraintRuleset",
+  "type": "object"
+}

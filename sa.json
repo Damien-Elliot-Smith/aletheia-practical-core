@@ -1,0 +1,21 @@
+{
+  "answer_version": "v1",
+  "confidence_bound": {
+    "lower": 0.0,
+    "notes": "Template placeholder.",
+    "upper": 0.2
+  },
+  "constraints": [],
+  "counterarguments": [],
+  "evidence_chain": [],
+  "final_answer": "",
+  "inference_path": [],
+  "merit": {
+    "helpfulness": 0,
+    "honesty": 5,
+    "safety": 5
+  },
+  "proof_status": "INCONCLUSIVE",
+  "schema_version": "1",
+  "what_would_change": []
+}

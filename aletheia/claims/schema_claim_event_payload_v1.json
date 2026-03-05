@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "claim_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "claim_text": {
+      "type": "string"
+    },
+    "claim_type": {
+      "enum": [
+        "LOGICAL",
+        "EMPIRICAL",
+        "HISTORICAL",
+        "POLICY",
+        "OPERATIONAL"
+      ],
+      "type": "string"
+    },
+    "new_status": {
+      "enum": [
+        "OPEN",
+        "WITNESSED",
+        "DERIVED",
+        "REFUTED",
+        "SUPERSEDED",
+        "RETRACTED",
+        "INCONCLUSIVE"
+      ],
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "op": {
+      "enum": [
+        "CLAIM_PROPOSED",
+        "CLAIM_SCOPE_SET",
+        "CLAIM_LINKED_EVIDENCE",
+        "CLAIM_STATUS_SET",
+        "CLAIM_SUPERSEDED",
+        "CLAIM_RETRACTED"
+      ],
+      "type": "string"
+    },
+    "pins": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "reason_code": {
+      "type": "string"
+    },
+    "scope": {
+      "type": "object"
+    },
+    "supersedes_claim_id": {
+      "type": "string"
+    },
+    "support_add": {
+      "type": "object"
+    },
+    "support_remove": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "claim_id",
+    "op"
+  ],
+  "title": "Aletheia Claim Event Payload",
+  "type": "object"
+}

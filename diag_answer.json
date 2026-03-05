@@ -1,0 +1,25 @@
+{
+  "checks": [
+    {
+      "check_id": "CHK_SCHEMA_STRUCTURED_ANSWER",
+      "details": {
+        "rc": 0
+      },
+      "errors": [],
+      "verdict": "PASS"
+    },
+    {
+      "check_id": "CHK_CONSTRAINTS_COMPILED",
+      "details": {
+        "rc": 0,
+        "ruleset_id": "constraints_v1"
+      },
+      "errors": [],
+      "verdict": "PASS"
+    }
+  ],
+  "created_utc": "2026-03-04T00:32:11Z",
+  "schema_version": "1",
+  "trace_id": "ebb868e1ca9ddc67ce3b16895af1476d011329ed94f7231034496a1047a0044b",
+  "verdict": "PASS"
+}

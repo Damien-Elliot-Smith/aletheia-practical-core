@@ -1,0 +1,20 @@
+{
+  "budgets": {
+    "max_files_touched": 5,
+    "max_runtime_seconds": 5,
+    "max_total_bytes": 1000000
+  },
+  "created_utc": "2026-03-04T00:12:21Z",
+  "notes": "",
+  "plan_hash": "b4134c998102f71c13ac7d9d49b062b26c0d36ead6660cd8456762fc25c97be1",
+  "plan_id": "2dcfe6797c0c8a53330e11768859989dfd420dbd133e9dad454fe58095d4ccfe",
+  "schema_version": "1",
+  "steps": [
+    {
+      "dst": "out/b.txt",
+      "op": "COPY",
+      "src": "in/a.txt"
+    }
+  ],
+  "workspace_root": "/storage/emulated/0/Provenance/core/Aletheia_v1_Practical_Core/workspace_demo"
+}

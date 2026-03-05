@@ -1,0 +1,164 @@
+{
+  "$id": "provenance://schemas/structured_answer/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "answer_version": {
+      "type": "string"
+    },
+    "confidence_bound": {
+      "additionalProperties": false,
+      "properties": {
+        "lower": {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "upper": {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "lower",
+        "upper",
+        "notes"
+      ],
+      "type": "object"
+    },
+    "constraints": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "counterarguments": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "evidence_chain": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "USER",
+              "FILE",
+              "WEB",
+              "INTERNAL"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "ref",
+          "summary"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "final_answer": {
+      "type": "string"
+    },
+    "inference_path": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "depends_on": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "step": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "step",
+          "depends_on"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "merit": {
+      "additionalProperties": false,
+      "properties": {
+        "helpfulness": {
+          "maximum": 5,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "honesty": {
+          "maximum": 5,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "safety": {
+          "maximum": 5,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "helpfulness",
+        "honesty",
+        "safety"
+      ],
+      "type": "object"
+    },
+    "proof_status": {
+      "enum": [
+        "PROVEN",
+        "DISPROVEN",
+        "UNPROVEN",
+        "INCONCLUSIVE"
+      ],
+      "type": "string"
+    },
+    "schema_version": {
+      "pattern": "^1$",
+      "type": "string"
+    },
+    "what_would_change": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "answer_version",
+    "proof_status",
+    "merit",
+    "confidence_bound",
+    "evidence_chain",
+    "inference_path",
+    "counterarguments",
+    "constraints",
+    "what_would_change",
+    "final_answer"
+  ],
+  "title": "StructuredAnswer",
+  "type": "object"
+}

@@ -1,0 +1,24 @@
+{
+  "actions": [
+    {
+      "bytes": 6,
+      "dst": "out/b.txt",
+      "ok": true,
+      "op": "COPY",
+      "src": "in/a.txt"
+    }
+  ],
+  "approval_hash": "b39e8d5399cdf5099509b68f3ed7aa9b3163555b70323ca4951f5cdee182779a",
+  "budgets": {
+    "max_files_touched": 5,
+    "max_runtime_seconds": 5,
+    "max_total_bytes": 1000000
+  },
+  "bytes_touched": 6,
+  "created_utc": "2026-03-04T00:12:21Z",
+  "files_touched": 1,
+  "plan_hash": "b4134c998102f71c13ac7d9d49b062b26c0d36ead6660cd8456762fc25c97be1",
+  "run_hash": "3f88fec703d8668dc167fb9e17d0a91a57d844f471650194fdacca9945aef35f",
+  "schema_version": "1",
+  "verdict": "PASS"
+}

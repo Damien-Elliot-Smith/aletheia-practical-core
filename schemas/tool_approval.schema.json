@@ -1,0 +1,49 @@
+{
+  "$id": "provenance://schemas/tool_approval/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "approval_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "approval_id": {
+      "type": "string"
+    },
+    "approver": {
+      "type": "string"
+    },
+    "comment": {
+      "type": "string"
+    },
+    "created_utc": {
+      "type": "string"
+    },
+    "decision": {
+      "enum": [
+        "APPROVE",
+        "REJECT"
+      ],
+      "type": "string"
+    },
+    "plan_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "schema_version": {
+      "pattern": "^1$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "approval_id",
+    "created_utc",
+    "approver",
+    "plan_hash",
+    "decision",
+    "approval_hash"
+  ],
+  "title": "ToolApproval",
+  "type": "object"
+}

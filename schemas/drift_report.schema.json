@@ -1,0 +1,43 @@
+{
+  "$id": "provenance://schemas/drift_report/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "created_utc": {
+      "type": "string"
+    },
+    "drift_id": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "results": {
+      "items": {
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "pattern": "^1$",
+      "type": "string"
+    },
+    "summary": {
+      "type": "object"
+    },
+    "verdict": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "ERROR"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "verdict",
+    "drift_id",
+    "results"
+  ],
+  "title": "DriftReport",
+  "type": "object"
+}

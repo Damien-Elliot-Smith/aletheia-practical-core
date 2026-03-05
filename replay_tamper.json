@@ -1,0 +1,30 @@
+{
+  "checks": [
+    {
+      "check_id": "CHK_VALIDATE_ENVELOPE",
+      "details": {
+        "rc": 2
+      },
+      "errors": [
+        "ENVELOPE_HASH_MISMATCH"
+      ],
+      "verdict": "FAIL"
+    },
+    {
+      "check_id": "CHK_ENVELOPE_HASH_RECOMPUTE",
+      "details": {
+        "expected": "8fa6a72b0d1cdc1d884a080b0f2cd4b3639067ba38671ec640af4a1320249c52",
+        "got": "49e36eb687f6bb33a5afecf3cf71e40799782ffbafd7a1b0f0643f9121490f74"
+      },
+      "errors": [
+        "ENVELOPE_HASH_MISMATCH"
+      ],
+      "verdict": "FAIL"
+    }
+  ],
+  "created_utc": "2026-03-04T00:47:56Z",
+  "env_path": "/storage/emulated/0/Provenance/core/Aletheia_v1_Practical_Core/env_TAMPER.json",
+  "replay_id": "efd08ddb1e16e4351126a2c46a1a26456b50ebf4827dcdc2060ac22231c86509",
+  "schema_version": "1",
+  "verdict": "FAIL"
+}

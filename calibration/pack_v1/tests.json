@@ -1,0 +1,34 @@
+{
+  "schema_version": "1",
+  "tests": [
+    {
+      "expected": {
+        "ambiguity_triggers": [
+          "AMBIG_PRONOUN_REFERENT",
+          "AMBIG_TARGET_ARTIFACT"
+        ]
+      },
+      "id": "SQ_001_short_ambiguous",
+      "input": "Ok give me that",
+      "kind": "structure_question"
+    },
+    {
+      "expected": {
+        "max_triggers": 3
+      },
+      "id": "SQ_002_env_ambiguous",
+      "input": "Can you help me fix this on my phone? It doesn\u2019t work and I don\u2019t know why.",
+      "kind": "structure_question"
+    },
+    {
+      "answer_path": "StructuredAnswer_TEMPLATE.json",
+      "expected": {
+        "validate_envelope": "PASS"
+      },
+      "id": "ENV_001_template_answer",
+      "kind": "make_envelope",
+      "manifest_path": "Provenance_Manifest.json",
+      "question_text": "Ok give me that"
+    }
+  ]
+}

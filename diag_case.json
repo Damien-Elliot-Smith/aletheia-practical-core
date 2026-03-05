@@ -1,0 +1,27 @@
+{
+  "checks": [
+    {
+      "check_id": "CHK_CASE_VERIFY",
+      "details": {
+        "case_id": "ad903f03067a1ebe",
+        "driftlock": {
+          "drift_signature": null,
+          "reasons": [
+            "ERR_DRIFT_NO_WINDOWS"
+          ],
+          "sealed_windows": [],
+          "verdict": "INCONCLUSIVE"
+        },
+        "rc": 0
+      },
+      "errors": [
+        "OK"
+      ],
+      "verdict": "PASS"
+    }
+  ],
+  "created_utc": "2026-03-04T00:32:48Z",
+  "schema_version": "1",
+  "trace_id": "f3acdb071a7e8672955e74664b6c256e6957a66b30790f211166feed4adcd9a8",
+  "verdict": "PASS"
+}

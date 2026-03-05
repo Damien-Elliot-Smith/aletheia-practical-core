@@ -1,0 +1,36 @@
+{
+  "constraint_sets": {
+    "calibration_pack_version": "v1",
+    "constraints_version": "v1",
+    "window_policy_version": "v1"
+  },
+  "core": {
+    "name": "Aletheia_v1_Practical_Core",
+    "sha256": "REPLACE_ME_SHA256_OF_CORE_ZIP_OR_TREE",
+    "version": "v1_4"
+  },
+  "created_utc": "REPLACE_ME_UTC",
+  "model_adapter": {
+    "capability_contract": "none",
+    "name": "none",
+    "version": "none"
+  },
+  "packs": {
+    "calibration_pack": "v1",
+    "redteam_pack": "v1"
+  },
+  "schema_version": "1",
+  "schemas": {
+    "provenance_envelope": "v1",
+    "redteam_case": "v1",
+    "refusal_reason": "v1",
+    "structured_answer": "v1",
+    "structured_question": "v1",
+    "tool_approval": "v1",
+    "tool_plan": "v1"
+  },
+  "tool_policy": {
+    "allowlist": [],
+    "budgets": {}
+  }
+}

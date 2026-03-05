@@ -1,0 +1,41 @@
+{
+  "$id": "provenance://schemas/diagnostic_trace/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checks": {
+      "items": {
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "created_utc": {
+      "type": "string"
+    },
+    "schema_version": {
+      "pattern": "^1$",
+      "type": "string"
+    },
+    "trace_id": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "verdict": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "ERROR",
+        "INCONCLUSIVE"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "trace_id",
+    "verdict",
+    "checks"
+  ],
+  "title": "DiagnosticTrace",
+  "type": "object"
+}

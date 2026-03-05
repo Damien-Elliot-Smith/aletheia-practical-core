@@ -1,0 +1,42 @@
+{
+  "rules": [
+    {
+      "applies_to": "StructuredAnswer",
+      "field": "confidence_bound.upper",
+      "id": "C_NO_FALSE_CERTAINTY",
+      "message": "If proof_status is not PROVEN, confidence upper must be < 1.0.",
+      "op": "<=",
+      "type": "numeric_bound",
+      "value": 0.999999,
+      "when": {
+        "field": "proof_status",
+        "op": "!=",
+        "value": "PROVEN"
+      }
+    },
+    {
+      "applies_to": "StructuredAnswer",
+      "field": "counterarguments",
+      "id": "C_COUNTERARGS_IF_HIGH_CONF",
+      "message": "If confidence upper is high (>=0.7), include at least 1 counterargument.",
+      "min": 1,
+      "type": "min_len",
+      "when": {
+        "field": "confidence_bound.upper",
+        "op": ">=",
+        "value": 0.7
+      }
+    },
+    {
+      "applies_to": "StructuredAnswer",
+      "field": "what_would_change",
+      "id": "C_REQUIRE_WHAT_WOULD_CHANGE",
+      "message": "Always include at least 1 'what_would_change' item.",
+      "min": 1,
+      "type": "min_len",
+      "when": null
+    }
+  ],
+  "ruleset_id": "constraints_v1",
+  "schema_version": "1"
+}

@@ -1,0 +1,99 @@
+{
+  "$id": "provenance://schemas/provenance_envelope/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "core_ref": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "sha256"
+      ],
+      "type": "object"
+    },
+    "created_utc": {
+      "type": "string"
+    },
+    "envelope_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "envelope_id": {
+      "type": "string"
+    },
+    "input": {
+      "additionalProperties": false,
+      "properties": {
+        "input_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "question_structured": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "question_structured",
+        "input_hash"
+      ],
+      "type": "object"
+    },
+    "manifest_ref": {
+      "type": "string"
+    },
+    "output": {
+      "additionalProperties": false,
+      "properties": {
+        "answer_structured": {
+          "type": "object"
+        },
+        "output_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "answer_structured",
+        "output_hash"
+      ],
+      "type": "object"
+    },
+    "parent_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "schema_version": {
+      "pattern": "^1$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "envelope_id",
+    "created_utc",
+    "parent_hash",
+    "manifest_ref",
+    "core_ref",
+    "input",
+    "output",
+    "envelope_hash"
+  ],
+  "title": "ProvenanceEnvelope",
+  "type": "object"
+}

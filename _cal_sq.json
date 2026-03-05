@@ -1,0 +1,15 @@
+{
+  "ambiguity_triggers": [
+    "AMBIG_PRONOUN_REFERENT",
+    "AMBIG_TARGET_ARTIFACT"
+  ],
+  "canonical": "Ok give me that",
+  "clarifying_questions": [
+    "What exactly does 'it/this/that/they' refer to here?",
+    "What exact file/repo/command are you referring to (name + path), and what output did you get?"
+  ],
+  "question_fingerprint": "5b3ffb8929a444087355521141cc605472ec273b6bc1b6fb9580a88944f6365a",
+  "raw": "Ok give me that",
+  "schema_version": "1",
+  "term_definitions": []
+}

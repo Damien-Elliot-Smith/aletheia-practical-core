@@ -1,0 +1,67 @@
+{
+  "$id": "provenance://schemas/structured_question/v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ambiguity_triggers": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "canonical": {
+      "type": "string"
+    },
+    "clarifying_questions": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 3,
+      "type": "array"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "question_fingerprint": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "raw": {
+      "type": "string"
+    },
+    "schema_version": {
+      "pattern": "^1$",
+      "type": "string"
+    },
+    "term_definitions": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "definition": {
+            "type": "string"
+          },
+          "term": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "term",
+          "definition"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "raw",
+    "canonical",
+    "question_fingerprint",
+    "ambiguity_triggers",
+    "clarifying_questions",
+    "term_definitions"
+  ],
+  "title": "StructuredQuestion",
+  "type": "object"
+}

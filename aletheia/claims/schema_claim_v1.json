@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "claim_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "claim_text": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "created_utc": {
+      "type": "string"
+    },
+    "reason_code": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "scope": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "status": {
+      "enum": [
+        "OPEN",
+        "WITNESSED",
+        "DERIVED",
+        "REFUTED",
+        "SUPERSEDED",
+        "RETRACTED",
+        "INCONCLUSIVE"
+      ],
+      "type": "string"
+    },
+    "support": {
+      "additionalProperties": false,
+      "properties": {
+        "citations": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "constraint_refs": {
+          "items": {
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "pins": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "policy_refs": {
+          "items": {
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "pins",
+        "constraint_refs",
+        "policy_refs",
+        "citations"
+      ],
+      "type": "object"
+    },
+    "type": {
+      "enum": [
+        "LOGICAL",
+        "EMPIRICAL",
+        "HISTORICAL",
+        "POLICY",
+        "OPERATIONAL"
+      ],
+      "type": "string"
+    },
+    "updated_utc": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "claim_id",
+    "claim_text",
+    "type",
+    "status",
+    "scope",
+    "support",
+    "reason_code"
+  ],
+  "title": "Aletheia Claim",
+  "type": "object"
+}

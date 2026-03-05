@@ -1,0 +1,25 @@
+{
+  "checks": [
+    {
+      "check_id": "CHK_VALIDATE_ENVELOPE",
+      "details": {
+        "rc": 0
+      },
+      "errors": [],
+      "verdict": "PASS"
+    },
+    {
+      "check_id": "CHK_ENVELOPE_HASH_RECOMPUTE",
+      "details": {
+        "envelope_hash": "49e36eb687f6bb33a5afecf3cf71e40799782ffbafd7a1b0f0643f9121490f74"
+      },
+      "errors": [],
+      "verdict": "PASS"
+    }
+  ],
+  "created_utc": "2026-03-04T01:11:48Z",
+  "env_path": "/storage/emulated/0/Provenance/core/Aletheia_v1_Practical_Core/env.json",
+  "replay_id": "dc0819807abad2d3f98002f69434c3d9edf1f310859269d051b9d10e75f6a429",
+  "schema_version": "1",
+  "verdict": "PASS"
+}

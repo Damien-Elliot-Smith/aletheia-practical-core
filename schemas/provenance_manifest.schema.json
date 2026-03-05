@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "provenance://schemas/provenance_manifest/v1",
+  "title": "ProvenanceManifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "core", "constraint_sets", "packs"],
+  "properties": {
+    "schema_version": { "type": "string", "pattern": "^1$" },
+    "created_utc": { "type": "string" },
+    "core": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "sha256"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "constraint_sets": { "type": "object", "additionalProperties": true },
+    "packs": { "type": "object", "additionalProperties": true },
+    "schemas": { "type": "object", "additionalProperties": true },
+    "tool_policy": { "type": "object", "additionalProperties": true },
+    "model_adapter": { "type": "object", "additionalProperties": true },
+    "tooling": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tool_runner": { "type": "object", "additionalProperties": true },
+        "self_diagnostic": { "type": "object", "additionalProperties": true },
+        "replay_engine": { "type": "object", "additionalProperties": true },
+        "drift_detector": { "type": "object", "additionalProperties": true },
+        "ui_shell": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["version","modes","session_export","stores_mode_in_envelope"],
+          "properties": {
+            "version": { "type":"string" },
+            "modes": { "type":"array", "items":{"type":"string"} },
+            "session_export": { "type":"boolean" },
+            "stores_mode_in_envelope": { "type":"boolean" }
+          }
+        }
+      }
+    }
+  }
+}
