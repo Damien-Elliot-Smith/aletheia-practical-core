@@ -1,0 +1,8 @@
+This bundle combines the ALETHEIA v2 Phase 2 project with the uploaded adversarial test pack.
+
+Notes:
+- The uploaded archive name suggested 1000 tests, but the actual pack contains 409 tests across 4 files.
+- The tests have been placed under tests409/ to reflect the actual current count.
+- Typical run command from the project root:
+
+  PYTHONPATH=. python -m unittest discover -s tests409 -p 'test_1000_scenarios_part*.py'

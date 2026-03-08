@@ -10,7 +10,7 @@ def sha256_hex(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
 
 def now_utc_iso() -> str:
-    return datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    return datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 def make_trace(payload: Dict[str, Any]) -> Dict[str, Any]:
     # trace_id must not depend on wall-clock time

@@ -44,6 +44,11 @@ def _normalize_zip_relpath(name: str, limits: ZipLimits) -> str:
     if len(name) >= 2 and name[1] == ":":
         raise ZipGuardError(R.ERR_PATH_TRAVERSAL, f"drive path: {name}")
 
+    # Phase 1.3 — backslash traversal guard (RT-07)
+    # Windows-style paths like ..\..\evil can bypass posixpath.normpath on some platforms.
+    if "\\" in name:
+        raise ZipGuardError(R.ERR_PATH_TRAVERSAL, f"backslash in path: {name}")
+
     norm = posixpath.normpath(name)
     if norm in (".", ""):
         raise ZipGuardError(R.ERR_BAD_PATH, f"empty path: {name}")
@@ -67,6 +72,16 @@ def build_extraction_plan(zip_path: str, limits: ZipLimits) -> List[ZipMemberPla
         with zipfile.ZipFile(zip_path, "r") as zf:
             infos = zf.infolist()
             infos.sort(key=lambda i: i.filename)  # determinism
+
+            # Duplicate entry detection: a zip with two entries sharing the same
+            # name is structurally ambiguous. Python's zipfile silently picks the
+            # last one — we reject it explicitly before that ambiguity can affect
+            # verification. This also suppresses the stdlib UserWarning.
+            seen_names: set = set()
+            for info in infos:
+                if info.filename in seen_names:
+                    raise ZipGuardError(R.ERR_BAD_ZIP, f"duplicate entry: {info.filename}")
+                seen_names.add(info.filename)
 
             for info in infos:
                 name = info.filename

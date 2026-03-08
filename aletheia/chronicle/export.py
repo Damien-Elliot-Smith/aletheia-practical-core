@@ -165,8 +165,8 @@ def build_case_zip(root_dir: str|Path, out_zip: str|Path, *, include_open_window
         case_manifest={
             "schema_version":"2",
             "core_freeze_sha256": core_freeze_sha256,
-            "case_id": hashlib.sha256((str(root.resolve())+"|"+__import__("datetime").datetime.utcnow().isoformat()).encode("utf-8")).hexdigest()[:16],
-            "created_utc": __import__("datetime").datetime.utcnow().replace(microsecond=0).isoformat()+"Z",
+            "case_id": hashlib.sha256((str(root.resolve())+"|"+__import__("datetime").datetime.now(__import__("datetime").timezone.utc).replace(microsecond=0).isoformat()).encode("utf-8")).hexdigest()[:16],
+            "created_utc": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).replace(microsecond=0).isoformat().replace("+00:00","Z"),
             "tool": {"name":"aletheia-practical-core","version":"v1"},
             "verify_ok": bool(report.get("ok",False)),
             "verify_report_sha256": verify_sha,

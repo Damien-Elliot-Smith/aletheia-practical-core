@@ -124,28 +124,93 @@ class Siren:
     # ---------- Persistence ----------
 
     def _load_or_init_state(self) -> None:
-        if not self.state_path.exists():
-            self._persist_state()
-            return
-        try:
-            obj = json.loads(self.state_path.read_text(encoding="utf-8"))
-            st = obj.get("state")
-            if st in SirenState._value2member_map_:
-                self._state = SirenState(st)
-            lhb = obj.get("last_heartbeat_ns")
-            if isinstance(lhb, int):
-                self._last_heartbeat_ns = lhb
-        except Exception:
-            # If state file is corrupted, do NOT silently assume NORMAL; record degrade + keep going.
-            self._state = SirenState.SUMMARIES_ONLY
-            self._last_heartbeat_ns = None
-            self._persist_state()
-            self.ledger.append_event(self.config.window_id, "MAYDAY", {
-                "from_state": "UNKNOWN",
-                "to_state": self._state.value,
-                "reason_code": MaydayCode.VERIFY_FAIL.value,
-                "details": {"note": "siren_state.json unreadable; forced SUMMARIES_ONLY"},
-            })
+        """
+        Phase 1.2 — Siren State Verified Against Spine (closes RT-02).
+
+        Previously: siren_state.json was loaded and trusted on boot (overwritable).
+        Now: replay the siren window from Spine to reconstruct the true last state.
+
+        siren_state.json is now a performance cache only. If the file says NORMAL but
+        Spine replay shows DEGRADED_CAPTURE, the Spine wins. If the file is unreadable,
+        fall back to Spine replay entirely.
+        """
+        # Step 1: replay Spine to find ground-truth last state
+        spine_state = self._replay_state_from_spine()
+
+        # Step 2: read the cache file
+        cached_state = None
+        cached_lhb = None
+        if self.state_path.exists():
+            try:
+                obj = json.loads(self.state_path.read_text(encoding="utf-8"))
+                st = obj.get("state")
+                if st in SirenState._value2member_map_:
+                    cached_state = SirenState(st)
+                lhb = obj.get("last_heartbeat_ns")
+                if isinstance(lhb, int):
+                    cached_lhb = lhb
+            except Exception:
+                cached_state = None
+
+        # Step 3: Spine wins on conflict. Cache is only used if it matches or spine has no opinion.
+        if spine_state is not None:
+            if cached_state is not None and cached_state != spine_state:
+                # Log the discrepancy — file was tampered or stale
+                self._state = spine_state
+                self._persist_state()
+                self.ledger.append_event(self.config.window_id, "MAYDAY", {
+                    "from_state": cached_state.value,
+                    "to_state": spine_state.value,
+                    "reason_code": MaydayCode.VERIFY_FAIL.value,
+                    "details": {
+                        "note": "siren_state.json conflicted with Spine replay; Spine wins.",
+                        "cached": cached_state.value,
+                        "spine": spine_state.value,
+                    },
+                })
+                return
+            self._state = spine_state
+        elif cached_state is not None:
+            self._state = cached_state
+        else:
+            self._state = SirenState.NORMAL
+
+        if cached_lhb is not None:
+            self._last_heartbeat_ns = cached_lhb
+
+        self._persist_state()
+
+    def _replay_state_from_spine(self) -> "Optional[SirenState]":
+        """
+        Walk the siren window events in order and reconstruct the final state.
+        Returns the last known SirenState, or None if no siren events found.
+        Cost: negligible — siren window is small.
+        """
+        windows_dir = self.ledger.spine_dir / "windows"
+        siren_wdir = windows_dir / self.config.window_id
+        events_dir = siren_wdir / "events"
+        if not events_dir.exists():
+            return None
+
+        import os as _os
+        files = sorted(events_dir.glob("*.json"))
+        files = [f for f in files if f.name[:6].isdigit()]
+        if not files:
+            return None
+
+        state: Optional[SirenState] = None
+        for f in files:
+            try:
+                ev = json.loads(f.read_text(encoding="utf-8"))
+                etype = ev.get("event_type", "")
+                payload = ev.get("payload", {})
+                if etype == "MAYDAY":
+                    to_state = payload.get("to_state")
+                    if to_state in SirenState._value2member_map_:
+                        state = SirenState(to_state)
+            except Exception:
+                continue
+        return state
 
     def _persist_state(self) -> None:
         obj = {

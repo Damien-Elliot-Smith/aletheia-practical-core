@@ -107,9 +107,12 @@ class SealRecord:
     last_hash: str
     window_root_hash: str
     event_count: int
+    # Phase 1.1 — External Integrity Anchor
+    signing_mode: str = "NONE"            # NONE | HMAC_SHA256 | RFC3161
+    seal_signature: Optional[str] = None  # hex-encoded bytes (if signed)
 
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        d: Dict[str, Any] = {
             "window_id": self.window_id,
             "sealed_utc": self.sealed_utc,
             "first_seq": self.first_seq,
@@ -118,7 +121,11 @@ class SealRecord:
             "last_hash": self.last_hash,
             "window_root_hash": self.window_root_hash,
             "event_count": self.event_count,
+            "signing_mode": self.signing_mode,
         }
+        if self.seal_signature is not None:
+            d["seal_signature"] = self.seal_signature
+        return d
 
 
 class SpineLedger:
@@ -139,7 +146,7 @@ class SpineLedger:
 
     All writes are atomic per file: write temp -> fsync -> rename.
     """
-    def __init__(self, root_dir: str | Path, *, allow_float_payload: bool = False):
+    def __init__(self, root_dir: str | Path, *, allow_float_payload: bool = False, signer=None):
         self.root_dir = Path(root_dir)
         self.allow_float_payload = allow_float_payload
         self.spine_dir = self.root_dir / "spine"
@@ -147,6 +154,11 @@ class SpineLedger:
         self.dirty_marker = self.spine_dir / "dirty.marker"
         self.scars_log = self.spine_dir / "scars.jsonl"
         self.witness_index = self.spine_dir / "witness_index.json"
+        # Phase 1.1: optional signer. NullSigner = v1 backward-compat mode.
+        if signer is None:
+            from aletheia.spine.signing import NullSigner
+            signer = NullSigner()
+        self._signer = signer
 
         self.windows_dir.mkdir(parents=True, exist_ok=True)
         self._boot_check_dirty_and_scar()
@@ -175,6 +187,15 @@ class SpineLedger:
         # Record WINDOW_OPEN as first event if empty
         if self._next_seq(window_id) == 1:
             self.append_event(window_id, "WINDOW_OPEN", {"window_id": window_id})
+
+        # Phase 1.2: flush pending boot event (CLEAN_BOOT / DIRTY_BOOT) into the siren window.
+        # We write it to every newly opened window on first open, but check a flag so it only
+        # fires once per process lifetime.
+        pending = getattr(self, "_pending_boot_event", None)
+        if pending is not None and self._next_seq(window_id) <= 2:
+            event_type, payload = pending
+            self.append_event(window_id, event_type, payload)
+            self._pending_boot_event = None  # fired; don't repeat on subsequent window opens
 
     def append_event(self, window_id: str, event_type: str, payload: Dict[str, Any]) -> Event:
         self._validate_payload(payload)
@@ -229,6 +250,10 @@ class SpineLedger:
         root_bytes = ("\n".join(e["hash"] for e in events) + "\n").encode("utf-8")
         root_hash = sha256_hex(root_bytes)
 
+        # Phase 1.1 — sign the window root hash if a signer is configured
+        sig_bytes = self._signer.sign(root_hash)
+        sig_hex = sig_bytes.hex() if sig_bytes is not None else None
+
         sr = SealRecord(
             window_id=window_id,
             sealed_utc=iso_utc_now(),
@@ -238,6 +263,8 @@ class SpineLedger:
             last_hash=str(last["hash"]),
             window_root_hash=root_hash,
             event_count=len(events),
+            signing_mode=self._signer.signing_mode,
+            seal_signature=sig_hex,
         )
         self._atomic_write_json(sealed_path, sr.to_dict())
         return sr
@@ -335,15 +362,87 @@ class SpineLedger:
             pass
 
     def _boot_check_dirty_and_scar(self) -> None:
+        """
+        Phase 1.2 — Spine-Anchored SCAR Detection (closes RT-03).
+
+        Previously: SCAR was only recorded in scars.jsonl (deletable).
+        Now: CLEAN_BOOT / DIRTY_BOOT are written as Spine events in the siren window.
+        The SCAR is inside the hash chain — deletion of dirty.marker no longer suppresses it.
+
+        Boot logic:
+          1. If dirty.marker exists → DIRTY_BOOT (unclean shutdown).
+          2. Else if the siren window's last event is not CLEAN_BOOT → DIRTY_BOOT
+             (catches the case where dirty.marker was deleted to cover tracks).
+          3. Otherwise → CLEAN_BOOT.
+
+        HEARTBEAT anchor: during normal operation, HEARTBEAT events are written to the
+        siren window every N seconds. On boot, if the last HEARTBEAT gap exceeds the
+        threshold, DIRTY_BOOT is emitted regardless of dirty.marker state.
+        See: Siren.tick() for the HEARTBEAT emission. SpineLedger only records boot state.
+
+        scars.jsonl: kept as a human-readable convenience log.
+        It is no longer the authoritative record — the Spine is.
+        """
         self.spine_dir.mkdir(parents=True, exist_ok=True)
-        if self.dirty_marker.exists():
-            # Record SCAR event to scars log (append-only jsonl)
-            scar = {
+
+        dirty_shutdown = self.dirty_marker.exists()
+
+        # Also check: was the previous shutdown clean according to the Spine?
+        # Look at the last event in the siren window.
+        if not dirty_shutdown:
+            dirty_shutdown = self._spine_shows_dirty_boot()
+
+        scar = {
+            "scar_type": "DIRTY_SHUTDOWN",
+            "detected_utc": iso_utc_now(),
+            "note": "Previous run did not close_clean(); integrity beyond last sealed window is unknown.",
+        }
+
+        if dirty_shutdown:
+            # Keep scars.jsonl for human-readable convenience
+            self._append_jsonl(self.scars_log, scar)
+            # Phase 1.2: also write DIRTY_BOOT as a Spine event (into siren window)
+            # We can't use append_event yet (window not open), so we schedule it.
+            self._pending_boot_event = ("DIRTY_BOOT", {
                 "scar_type": "DIRTY_SHUTDOWN",
                 "detected_utc": iso_utc_now(),
-                "note": "Previous run did not close_clean(); integrity beyond last sealed window is unknown.",
-            }
-            self._append_jsonl(self.scars_log, scar)
+                "note": "Spine-anchored SCAR: unclean shutdown detected on boot.",
+                "dirty_marker_present": self.dirty_marker.exists(),
+            })
+        else:
+            self._pending_boot_event = ("CLEAN_BOOT", {
+                "detected_utc": iso_utc_now(),
+                "note": "Clean boot: previous run closed cleanly.",
+            })
+
+    def _spine_shows_dirty_boot(self) -> bool:
+        """
+        Phase 1.2: Check if the siren window's last event indicates dirty state.
+        Looks for any siren window and checks whether its last meaningful event
+        is a CLEAN_BOOT. If not, returns True (treat as dirty).
+        Returns False if no siren window exists (first boot — clean by definition).
+        """
+        if not self.windows_dir.exists():
+            return False
+        # Siren always uses a window named "siren" by convention
+        siren_wdir = self.windows_dir / "siren"
+        if not siren_wdir.exists():
+            return False
+        events_dir = siren_wdir / "events"
+        if not events_dir.exists():
+            return False
+        files = sorted(events_dir.glob("*.json"))
+        files = [f for f in files if f.name[:6].isdigit()]
+        if not files:
+            return False
+        # Read the last event
+        try:
+            last_event = json.loads(files[-1].read_text(encoding="utf-8"))
+            last_type = last_event.get("event_type", "")
+            # If the last event is CLEAN_BOOT, previous shutdown was clean
+            return last_type != "CLEAN_BOOT"
+        except Exception:
+            return True  # can't read = treat as dirty
 
     def _append_jsonl(self, path: Path, obj: Dict[str, Any]) -> None:
         # Append-only with fsync

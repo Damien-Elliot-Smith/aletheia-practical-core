@@ -4,6 +4,12 @@ import argparse, json, hashlib, zipfile, sys
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Set
 
+# Self-bootstrap: ensure the project root is on sys.path regardless of how this
+# script is invoked (direct run, subprocess, pytest, Termux, cron, etc.)
+_HERE = Path(__file__).resolve().parent.parent  # tools/ -> project root
+if str(_HERE) not in sys.path:
+    sys.path.insert(0, str(_HERE))
+
 # v1_3 hostile-input gating + limits/reasons
 from aletheia.detective.zipguard import build_extraction_plan, ZipGuardError
 from aletheia.detective.limits import ZipLimits
@@ -169,26 +175,71 @@ def verify_case(case_zip: Path, *, drift_lock: bool = True, enforce_drift: bool 
                     "case_id": None,
                 }
 
-            reasons = []
+            # ── Strict manifest schema validation (fail closed) ──────────────
+            # A verifier must reject malformed structure, not silently skip work.
+            # Every field is checked for presence AND type before any hash work begins.
+            schema_errors = []
 
-            # basic required keys
             for k in ("schema_version", "files", "windows", "verify_report_sha256"):
                 if k not in man:
-                    reasons.append(f"MISSING_{k}")
-            if reasons:
+                    schema_errors.append(f"MISSING_{k}")
+
+            if not schema_errors:
+                # Type guards — wrong type is FAIL, not a skip
+                if not isinstance(man["files"], list):
+                    schema_errors.append("MANIFEST_FILES_NOT_LIST")
+                if not isinstance(man["windows"], list):
+                    schema_errors.append("MANIFEST_WINDOWS_NOT_LIST")
+                if not isinstance(man.get("verify_report_sha256"), str):
+                    schema_errors.append("MANIFEST_VERIFY_REPORT_SHA256_NOT_STRING")
+                elif len(man["verify_report_sha256"]) != 64:
+                    schema_errors.append("MANIFEST_VERIFY_REPORT_SHA256_BAD_LENGTH")
+
+            if not schema_errors:
+                # Per-file entry validation: every entry must be a dict with required string fields
+                for i, entry in enumerate(man["files"]):
+                    if not isinstance(entry, dict):
+                        schema_errors.append(f"FILE_ENTRY_{i}_NOT_DICT")
+                        break
+                    for field in ("zip_path", "sha256"):
+                        if field not in entry:
+                            schema_errors.append(f"FILE_ENTRY_{i}_MISSING_{field}")
+                        elif not isinstance(entry[field], str):
+                            schema_errors.append(f"FILE_ENTRY_{i}_{field}_NOT_STRING")
+                    if "bytes" in entry and not isinstance(entry["bytes"], int):
+                        schema_errors.append(f"FILE_ENTRY_{i}_BYTES_NOT_INT")
+                    if schema_errors:
+                        break
+
+            if not schema_errors:
+                # Per-window entry validation
+                for i, w in enumerate(man["windows"]):
+                    if not isinstance(w, dict):
+                        schema_errors.append(f"WINDOW_ENTRY_{i}_NOT_DICT")
+                        break
+                    if "window_id" in w and not isinstance(w["window_id"], str):
+                        schema_errors.append(f"WINDOW_ENTRY_{i}_WINDOW_ID_NOT_STRING")
+                    if schema_errors:
+                        break
+
+            if schema_errors:
                 return {
                     "verdict": "FAIL",
-                    "reasons": reasons,
+                    "reasons": schema_errors,
                     "hash_mismatches": [],
                     "missing_files": [],
                     "window_failures": [],
                     "case_id": man.get("case_id"),
                 }
+            # ── End schema validation ─────────────────────────────────────────
+
+            # reasons accumulates non-schema issues found during hash/window verification
+            reasons = []
 
             # verify listed file hashes
             hash_mismatches = []
             missing_files = []
-            for f in man.get("files", []):
+            for f in man["files"]:
                 zp = f.get("zip_path")
                 if not isinstance(zp, str):
                     continue

@@ -34,6 +34,9 @@ class RejectReason(str, Enum):
     RATE_LIMIT = "RATE_LIMIT"
     REJECT_LOG_FULL = "REJECT_LOG_FULL"  # should not happen (bounded ring), but explicit
     INTERNAL_ERROR = "INTERNAL_ERROR"
+    # Phase 1.3 — Bounded Ingest (closes RT-04)
+    PAYLOAD_TOO_LARGE = "PAYLOAD_TOO_LARGE"   # serialised payload exceeds max_payload_bytes
+    PAYLOAD_TOO_DEEP = "PAYLOAD_TOO_DEEP"     # nested dict/list depth exceeds max_payload_depth
 
 
 class IngestDecision(str, Enum):
@@ -63,6 +66,27 @@ class IngestConfig:
     # Reject surge detection window
     surge_window_s: int = 10
     surge_reject_threshold: int = 200
+    # Phase 1.3 — Bounded Ingest (closes RT-04)
+    # Max serialised payload size in bytes. Default 64 KiB.
+    # A payload flood of large events can exhaust disk without triggering Siren.
+    max_payload_bytes: int = 65536
+    # Max nesting depth of payload dict/list. Guards against stack-busting structures.
+    max_payload_depth: int = 32
+
+
+def _measure_depth(obj: Any, _current: int = 0) -> int:
+    """Phase 1.3: Measure the maximum nesting depth of a JSON-compatible object."""
+    if _current > 64:  # hard ceiling to prevent stack overflow during measurement itself
+        return _current
+    if isinstance(obj, dict):
+        if not obj:
+            return _current
+        return max(_measure_depth(v, _current + 1) for v in obj.values())
+    if isinstance(obj, list):
+        if not obj:
+            return _current
+        return max(_measure_depth(v, _current + 1) for v in obj)
+    return _current
 
 
 class TokenBucket:
@@ -243,6 +267,28 @@ class IngestGate:
             return IngestResult(decision=IngestDecision.REJECT, reason=RejectReason.FIELD_TYPE_INVALID, detail={"field": "event_type"})
         if not isinstance(payload, dict):
             return IngestResult(decision=IngestDecision.REJECT, reason=RejectReason.PAYLOAD_NOT_DICT)
+
+        # Phase 1.3 — payload size guard (RT-04)
+        try:
+            payload_bytes = len(json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8"))
+        except (TypeError, ValueError):
+            return IngestResult(decision=IngestDecision.REJECT, reason=RejectReason.SCHEMA_INVALID,
+                                detail={"note": "payload not JSON-serialisable"})
+        if payload_bytes > self.config.max_payload_bytes:
+            return IngestResult(
+                decision=IngestDecision.REJECT,
+                reason=RejectReason.PAYLOAD_TOO_LARGE,
+                detail={"bytes": payload_bytes, "limit": self.config.max_payload_bytes},
+            )
+
+        # Phase 1.3 — payload depth guard (RT-04)
+        depth = _measure_depth(payload)
+        if depth > self.config.max_payload_depth:
+            return IngestResult(
+                decision=IngestDecision.REJECT,
+                reason=RejectReason.PAYLOAD_TOO_DEEP,
+                detail={"depth": depth, "limit": self.config.max_payload_depth},
+            )
 
         # minimal sanitized payload that goes into Spine (adapter isolation)
         sanitized = {

@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse, json, os, subprocess, sys, zipfile, hashlib, time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from tools._zip_write import write_zip_from_tree, ZipWritePolicy
 
 def now_utc_iso() -> str:
     import datetime
@@ -115,7 +116,7 @@ def main() -> int:
         report["checks"].append({"check_id":"REL_REDTEAM_PACK","verdict":"INCONCLUSIVE","errors":["MISSING_PACK_OR_RUNNER"]})
 
     # 4) run drift detector if present
-    drift = core / "tools/run_drift.py"
+    drift = core / "tools/run_drift_detector.py"
     if drift.exists():
         r = run([sys.executable, str(drift),
                  "--core-dir", str(core),
@@ -135,10 +136,15 @@ def main() -> int:
     if zip_path.exists():
         zip_path.unlink()
 
-    # Important: make zip contents stable by ordering and fixed timestamps are not supported by zipfile easily;
-    # we at least ensure file ordering is deterministic.
-    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as z:
-        file_count = add_tree(z, core, "Aletheia_v1_Practical_Core", exclude_dirs=sorted(exclude))
+    # Route through _zip_write.py: enforces fixed timestamps, deterministic ordering,
+    # and centralised zip-writing policy. Same source tree -> same zip bytes.
+    file_count = write_zip_from_tree(
+        str(zip_path),
+        str(core),
+        "Aletheia_v1_Practical_Core",
+        exclude_dirs=sorted(exclude),
+        policy=ZipWritePolicy(),
+    )
 
     sha = sha256_file(zip_path)
     sha_path = out_dir / f"{zip_name}.sha256"
