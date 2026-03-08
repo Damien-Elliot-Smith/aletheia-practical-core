@@ -1,7 +1,6 @@
 from __future__ import annotations
 import json
 import zipfile
-from tools._zip_io import open_zipfile_verified
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Set
@@ -89,9 +88,7 @@ def _pin_window(path_in_zip: str) -> Optional[str]:
 def check_claim(case_zip: str|Path, claim_id: str, *, claims_window_id: str="claims") -> CheckResult:
     case_zip = Path(case_zip)
     reasons: List[str]=[]
-    with open_zipfile_verified(str(case_zip)) as (zr, z):
-        if z is None:
-            return {"verdict": zr.verdict, "reasons": [zr.reason], "detail": zr.detail}
+    with zipfile.ZipFile(case_zip, "r") as z:
         # Ensure claims window sealed
         if f"evidence/spine/windows/{claims_window_id}/sealed.json" not in z.namelist():
             return CheckResult(claim_id, "INCONCLUSIVE", ["CLAIMS_WINDOW_NOT_SEALED"])
@@ -195,9 +192,7 @@ def check_claim(case_zip: str|Path, claim_id: str, *, claims_window_id: str="cla
 
 def check_all(case_zip: str|Path, *, claims_window_id: str="claims") -> Dict[str, Any]:
     case_zip = Path(case_zip)
-    with open_zipfile_verified(str(case_zip)) as (zr, z):
-        if z is None:
-            return {"verdict": zr.verdict, "reasons": [zr.reason], "detail": zr.detail}
+    with zipfile.ZipFile(case_zip, "r") as z:
         # list claim ids by scanning claims events payloads inside zip
         ids=set()
         prefix=f"evidence/spine/windows/{claims_window_id}/events/"

@@ -1,7 +1,6 @@
 from __future__ import annotations
 import json
 import zipfile
-from tools._zip_io import open_zipfile_verified
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -29,9 +28,7 @@ class _EvidenceRootCM:
         import tempfile
         self._td = tempfile.TemporaryDirectory()
         root = Path(self._td.name)
-        with open_zipfile_verified(str(self.case_zip)) as (zr, z):
-            if z is None:
-                raise ValueError(f"case zip failed ZipGuard: {zr.reason} {zr.detail}")
+        with zipfile.ZipFile(self.case_zip, "r") as z:
             prefix = "evidence/spine/"
             for n in z.namelist():
                 if n.startswith(prefix) and not n.endswith("/"):

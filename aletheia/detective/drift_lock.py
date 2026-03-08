@@ -33,7 +33,16 @@ def _sealed_windows(z: zipfile.ZipFile) -> Set[str]:
 def _manifest_windows(man: Dict[str, Any]) -> List[str]:
     w = man.get("windows", [])
     if isinstance(w, list):
-        return [str(x) for x in w]
+        result = []
+        for x in w:
+            if isinstance(x, dict):
+                # build_case_zip emits windows as list of dicts with window_id key
+                wid = x.get("window_id") or x.get("id")
+                if wid:
+                    result.append(str(wid))
+            elif x is not None:
+                result.append(str(x))
+        return result
     if isinstance(w, dict):
         for k in ("ids", "windows"):
             v = w.get(k)

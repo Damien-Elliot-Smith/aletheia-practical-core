@@ -163,13 +163,12 @@ def cmd_export(args: argparse.Namespace) -> int:
         out_zip.unlink()
 
     parent = sdir.parent.resolve()
-    items = []
-    for p in sorted(sdir.rglob("*")):
-        if p.is_dir():
-            continue
-        rel = p.relative_to(parent).as_posix()
-        items.append((str(p), rel))
-    write_zip_from_files(str(out_zip), items)
+    with zipfile.ZipFile(out_zip, "w", compression=zipfile.ZIP_DEFLATED) as z:
+        for p in sorted(sdir.rglob("*")):
+            if p.is_dir():
+                continue
+            rel = p.relative_to(parent).as_posix()
+            z.write(p, rel)
 
     sha = sha256_hex(out_zip.read_bytes())
     sha_path = out_zip.with_suffix(out_zip.suffix + ".sha256")

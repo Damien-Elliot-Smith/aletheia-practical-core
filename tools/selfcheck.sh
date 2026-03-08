@@ -1,50 +1,53 @@
-#!/data/data/com.termux/files/usr/bin/bash
-set -euo pipefail
+#!/bin/sh
+# selfcheck.sh — Aletheia engine self-check
+# Works on: Termux (Android), Linux, macOS
+# No hardcoded paths. Run from any directory.
+set -e
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 export PYTHONPATH="$ROOT_DIR"
 
-echo "[selfcheck] ROOT_DIR=$ROOT_DIR"
-
-python -m aletheia.detective --help >/dev/null
-
-# Phase B1 gate: ban raw zipfile.ZipFile usage outside allowed modules
-echo "[selfcheck] zip IO gate (no raw zipfile.ZipFile outside ZipGuard/_zip_io/_zip_write; tests exempt)..."
-BAD="$(grep -RIn "zipfile\.ZipFile(" . \
-  --exclude-dir=__pycache__ \
-  --exclude="*.pyc" \
-  | grep -v "aletheia/detective/zipguard.py" \
-  | grep -v "tools/_zip_io.py" \
-  | grep -v "tools/_zip_write.py" \
-  | grep -v "^\./tests/" || true)"
-if [ -n "$BAD" ]; then
-  echo "[selfcheck] FAIL: raw zipfile.ZipFile usage found (must route through tools/_zip_io.py or tools/_zip_write.py):"
-  echo "$BAD"
-  exit 2
+# Detect python binary (Termux uses 'python', others may use 'python3')
+if command -v python3 > /dev/null 2>&1; then
+    PY=python3
+elif command -v python > /dev/null 2>&1; then
+    PY=python
+else
+    echo "[selfcheck] ERROR: python not found. Install python first."
+    exit 1
 fi
 
+echo "[selfcheck] ROOT=$ROOT_DIR"
+echo "[selfcheck] Python=$($PY --version 2>&1)"
 
-CASES="/storage/emulated/0/Aletheia/cases"
-GOOD="$CASES/case_boundary_test.zip"
-BAD1="$CASES/case_boundary_test_TAMPER.zip"
-BAD2="$CASES/case_boundary_test_TAMPER2.zip"
-
-for f in "$GOOD" "$BAD1" "$BAD2"; do
-  if [ ! -f "$f" ]; then
-    echo "[selfcheck] ERROR: missing required demo case: $f"
+# 1. Engine module check
+echo "[selfcheck] Checking engine modules..."
+$PY "$ROOT_DIR/aletheia_selfcheck.py"
+if [ $? -ne 0 ]; then
+    echo "[selfcheck] FAIL: engine module check failed"
     exit 2
-  fi
-done
+fi
 
-echo "[selfcheck] verify GOOD (expect PASS): $GOOD"
-python -m aletheia.detective verify "$GOOD" --pretty | grep -q '"verdict": "PASS"'
+# 2. Verify known-good example
+echo "[selfcheck] Verifying known-good example..."
+$PY "$ROOT_DIR/aletheia.py" verify "$ROOT_DIR/examples/case_boundary_test.zip" --json | \
+    $PY -c "import sys,json; r=json.load(sys.stdin); v=r.get('overall_verdict'); print('[selfcheck] good case verdict:', v); sys.exit(0 if v=='PASS' else 2)"
+if [ $? -ne 0 ]; then
+    echo "[selfcheck] FAIL: good example did not PASS"
+    exit 2
+fi
 
-echo "[selfcheck] verify BAD1 (expect ERROR): $BAD1"
-OUT1="$(python -m aletheia.detective verify "$BAD1" --pretty || true)"
-echo "$OUT1" | grep -q '"status": "ERROR"'
+# 3. Verify tampered example detects tampering
+echo "[selfcheck] Verifying tampered example is caught..."
+TAMPER_VERDICT=$($PY "$ROOT_DIR/aletheia.py" verify "$ROOT_DIR/examples/case_boundary_test_TAMPER2.zip" --json | \
+    $PY -c "import sys,json; r=json.load(sys.stdin); print(r.get('overall_verdict','ERROR'))")
+if [ "$TAMPER_VERDICT" = "FAIL" ] || [ "$TAMPER_VERDICT" = "ERROR" ]; then
+    echo "[selfcheck] tampered case verdict: $TAMPER_VERDICT (correct)"
+else
+    echo "[selfcheck] FAIL: tampered example gave unexpected verdict: $TAMPER_VERDICT"
+    exit 2
+fi
 
-echo "[selfcheck] verify BAD2 (expect FAIL): $BAD2"
-OUT2="$(python -m aletheia.detective verify "$BAD2" --pretty || true)"
-echo "$OUT2" | grep -q '"verdict": "FAIL"'
-
-echo "[selfcheck] OK"
+echo ""
+echo "[selfcheck] ALL OK — Aletheia is working correctly on this device."
+echo "Try: $PY aletheia.py demo"

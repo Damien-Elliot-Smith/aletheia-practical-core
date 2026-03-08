@@ -1,0 +1,51 @@
+Aletheia v1 — Install and run on any device
+============================================
+
+REQUIREMENTS
+  Python 3.8+, stdlib only. No pip installs needed.
+
+TERMUX (Android)
+  pkg install python
+  cd /storage/emulated/0/Download/ALETHEIA_PORTABLE
+  unzip Aletheia_Portable_Working.zip
+  cd Aletheia_v1_Practical_Core
+  bash tools/selfcheck.sh
+
+LINUX / macOS
+  unzip Aletheia_Portable_Working.zip
+  cd Aletheia_v1_Practical_Core
+  bash tools/selfcheck.sh
+
+WHAT TO RUN
+  # Self-check — confirm the engine is intact on this device
+  python aletheia.py selfcheck
+
+  # Demo — three cases (good / tampered / corrupt), expected outcomes shown
+  python aletheia.py demo
+
+  # Verify a bundle
+  python aletheia.py verify path/to/bundle.zip
+
+  # Verify (machine-readable JSON output)
+  python aletheia.py verify path/to/bundle.zip --json
+
+  # Original low-level verifier (stdlib only, no other files needed)
+  PYTHONPATH=. python tools/verify_case.py examples/case_boundary_test.zip
+
+WHAT ALETHEIA VERIFIES
+  - Zip structure is safe (no path traversal, no corruption)
+  - Every file matches its recorded hash
+  - The hash chain is unbroken
+  - The bundle has not been modified since capture
+
+WHAT ALETHEIA DOES NOT VERIFY
+  - Whether the original content was true or accurate
+  - Whether the operator who captured it was honest
+  - Whether the capturing machine was compromised
+  - Whether all relevant evidence was captured
+  - Legal chain of custody before ingestion
+
+EXAMPLES INCLUDED
+  examples/case_boundary_test.zip         — known good, should PASS
+  examples/case_boundary_test_TAMPER.zip  — corrupted zip, should ERROR
+  examples/case_boundary_test_TAMPER2.zip — hash mismatch, should FAIL

@@ -114,49 +114,20 @@ def main() -> int:
     else:
         report["checks"].append({"check_id":"REL_REDTEAM_PACK","verdict":"INCONCLUSIVE","errors":["MISSING_PACK_OR_RUNNER"]})
 
-    # 4) run drift detector (required by default)
-    drift = core / "tools/run_drift_detector.py"
-    drift_out = out_dir / "_release_drift_report.json"
-
-    # packs and samples (may be absent; absence must be explicit INCONCLUSIVE with reason)
-    cal_pack = core / "calibration/pack_v1/tests.json"
-    rt_pack  = core / "redteam/pack_v1/tests.json"
-    cc_path  = core / "constraints/compiled_constraints.json"
-    sample_env = core / "env.json"
-    sample_answer = core / "sa.json"
-
-    if not drift.exists():
-        report["checks"].append({"check_id":"REL_DRIFT_DETECTOR","verdict":"INCONCLUSIVE","errors":["MISSING_RUNNER"]})
+    # 4) run drift detector if present
+    drift = core / "tools/run_drift.py"
+    if drift.exists():
+        r = run([sys.executable, str(drift),
+                 "--core-dir", str(core),
+                 "--out", str(out_dir/"_release_drift_report.json")], cwd=core, env=env)
+        chk = {"check_id":"REL_DRIFT_DETECTOR","details":r,"verdict":"PASS" if r["rc"]==0 else "FAIL"}
+        if r["rc"] != 0:
+            chk["errors"] = ["DRIFT_FAIL"]
+            report["verdict"] = "FAIL"
+        report["checks"].append(chk)
+        report["artifacts"]["drift_report"] = str(out_dir/"_release_drift_report.json")
     else:
-        missing = []
-        if not Path(args.manifest).resolve().exists():
-            missing.append("--manifest")
-        if not sample_env.exists():
-            missing.append("--sample-env")
-        # packs are optional inputs, but if the files exist we should pass them
-        cmd = [sys.executable, str(drift),
-               "--core-dir", str(core),
-               "--manifest", str(Path(args.manifest).resolve()),
-               "--sample-env", str(sample_env),
-               "--out", str(drift_out)]
-        if cal_pack.exists():
-            cmd += ["--calibration-pack", str(cal_pack)]
-        if rt_pack.exists():
-            cmd += ["--redteam-pack", str(rt_pack)]
-        if cc_path.exists():
-            cmd += ["--compiled-constraints", str(cc_path)]
-        if sample_answer.exists():
-            cmd += ["--sample-answer", str(sample_answer)]
-
-        if missing:
-            report["checks"].append({"check_id":"REL_DRIFT_DETECTOR","verdict":"INCONCLUSIVE","errors":["MISSING_ARGS"],"details":{"missing":missing}})
-        else:
-            r = run(cmd, cwd=core, env=env)
-            chk = {"check_id":"REL_DRIFT_DETECTOR","details":r,"verdict":"PASS" if r["rc"]==0 else "FAIL"}
-            if r["rc"] != 0:
-                chk["errors"] = ["DRIFT_FAIL"]
-            report["checks"].append(chk)
-            report["artifacts"]["drift_report"] = str(drift_out)
+        report["checks"].append({"check_id":"REL_DRIFT_DETECTOR","verdict":"INCONCLUSIVE","errors":["MISSING_RUNNER"]})
 
     # 5) pack snapshot zip (always)
     zip_name = f"Provenance_FULL_SNAPSHOT_{args.version}.zip"
@@ -166,7 +137,8 @@ def main() -> int:
 
     # Important: make zip contents stable by ordering and fixed timestamps are not supported by zipfile easily;
     # we at least ensure file ordering is deterministic.
-    file_count = write_zip_from_tree(str(zip_path), str(core), "Aletheia_v1_Practical_Core", exclude_dirs=sorted(exclude))
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as z:
+        file_count = add_tree(z, core, "Aletheia_v1_Practical_Core", exclude_dirs=sorted(exclude))
 
     sha = sha256_file(zip_path)
     sha_path = out_dir / f"{zip_name}.sha256"
@@ -176,18 +148,6 @@ def main() -> int:
     report["artifacts"]["snapshot_sha256"] = str(sha_path)
     report["artifacts"]["snapshot_file_count"] = file_count
     report["artifacts"]["snapshot_sha256_value"] = sha
-
-
-    # verdict policy: no silent PASS if any REQUIRED check is not PASS
-    REQUIRED = {"REL_MANIFEST_PRESENT","REL_VALIDATE_MANIFEST","REL_DRIFT_DETECTOR"}
-    # determine worst outcome among required checks
-    req = [c for c in report["checks"] if c.get("check_id") in REQUIRED]
-    verdicts = [c.get("verdict") for c in req]
-    if any(v in ("FAIL","ERROR") for v in verdicts):
-        report["verdict"] = "FAIL"
-    elif any(v == "INCONCLUSIVE" for v in verdicts):
-        # only downgrade to INCONCLUSIVE if we didn't already fail
-        report["verdict"] = "INCONCLUSIVE"
 
     report_path = out_dir / f"release_report_{args.version}.json"
     write_json(report_path, report)

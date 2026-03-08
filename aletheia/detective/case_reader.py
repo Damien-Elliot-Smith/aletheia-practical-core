@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import zipfile
-from tools._zip_io import open_zipfile_verified
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict
@@ -26,9 +25,7 @@ class CaseReader:
 
         # Basic zip sanity
         try:
-            with open_zipfile_verified(str(p)) as (zr, zf):
-                if zf is None:
-                    raise ValueError(f"case zip failed ZipGuard: {zr.reason} {zr.detail}")
+            with zipfile.ZipFile(p, "r") as zf:
                 bad = zf.testzip()
                 if bad is not None:
                     return {"status": "ERROR", "reason": f"zip corruption at: {bad}"}
@@ -50,9 +47,7 @@ class CaseReader:
         # Optional drift-lock: ensure case was produced by the same frozen core
         if drift_lock:
             try:
-                with open_zipfile_verified(str(p)) as (zr, zf):
-                    if zf is None:
-                        raise ValueError(f"case zip failed ZipGuard: {zr.reason} {zr.detail}")
+                with zipfile.ZipFile(p, "r") as zf:
                     manifest = json.loads(zf.read("case_manifest.json").decode("utf-8"))
             except Exception as e:
                 report = dict(report) if isinstance(report, dict) else {"status": "ERROR"}

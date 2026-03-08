@@ -1,3 +1,4 @@
+import os
 import tempfile, json, zipfile, shutil, subprocess, sys
 from pathlib import Path
 from aletheia.spine.ledger import SpineLedger
@@ -20,7 +21,7 @@ def test_case_manifest_present_and_external_verifier_passes():
         with zipfile.ZipFile(case,"r") as z:
             assert "case_manifest.json" in z.namelist()
         # run external verifier
-        proc=subprocess.run([sys.executable, str(Path(__file__).resolve().parents[1]/"tools/verify_case.py"), str(case)], capture_output=True, text=True)
+        proc=subprocess.run([sys.executable, str(Path(__file__).resolve().parents[1]/"tools/verify_case.py"), str(case)], capture_output=True, text=True, env={**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[1])})
         assert proc.returncode == 0, proc.stdout + proc.stderr
         out=json.loads(proc.stdout)
         assert out["verdict"]=="PASS"
@@ -45,7 +46,7 @@ def test_external_verifier_detects_tamper():
                     obj["payload"]={"k":"tampered"}
                     data=json.dumps(obj, sort_keys=True, indent=2).encode("utf-8")
                 zout.writestr(item, data)
-        proc=subprocess.run([sys.executable, str(Path(__file__).resolve().parents[1]/"tools/verify_case.py"), str(tampered)], capture_output=True, text=True)
+        proc=subprocess.run([sys.executable, str(Path(__file__).resolve().parents[1]/"tools/verify_case.py"), str(tampered)], capture_output=True, text=True, env={**os.environ, "PYTHONPATH": str(Path(__file__).resolve().parents[1])})
         assert proc.returncode != 0
         out=json.loads(proc.stdout)
         assert out["verdict"]=="FAIL"
