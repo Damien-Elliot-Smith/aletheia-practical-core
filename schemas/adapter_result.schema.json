@@ -1,0 +1,93 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "adapter_result.schema.json",
+  "title": "Adapter Result",
+  "description": "The complete output of a single adapter run against one input. Contains overall status, all canonical events produced, all losses, all rejections, and full provenance metadata. Never hides partial failure.",
+  "type": "object",
+  "required": [
+    "adapter_name", "adapter_version", "trust_level",
+    "status", "input_hash",
+    "canonical_events", "losses", "rejections", "warnings"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "adapter_name":    { "type": "string" },
+    "adapter_version": { "type": "string" },
+    "trust_level": {
+      "type": "string",
+      "enum": ["AUTHENTICATED_SOURCE", "OBSERVED_SOURCE", "UNAUTHENTICATED_SOURCE", "AMBIGUOUS_SOURCE"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ACCEPTED", "ACCEPTED_WITH_LOSS", "REJECTED", "UNSUPPORTED"],
+      "description": "ACCEPTED: all events clean. ACCEPTED_WITH_LOSS: at least one loss. REJECTED: no usable events produced. UNSUPPORTED: adapter cannot handle this input type."
+    },
+    "input_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA256 of the raw input bytes passed to the adapter."
+    },
+    "canonical_events": {
+      "type": "array",
+      "description": "Zero or more canonical events ready for the Ingest Gate. Empty on REJECTED or UNSUPPORTED.",
+      "items": { "$ref": "canonical_adapter_event.schema.json" }
+    },
+    "losses": {
+      "type": "array",
+      "description": "All loss records across the entire input.",
+      "items": {
+        "type": "object",
+        "required": ["loss_type", "field", "detail"],
+        "additionalProperties": false,
+        "properties": {
+          "loss_type": {
+            "type": "string",
+            "enum": [
+              "LOSS_OF_PRECISION", "LOSS_OF_STRUCTURE",
+              "LOSS_OF_COMPLETENESS", "LOSS_OF_CAUSAL_LINKAGE",
+              "LOSS_OF_AUTHENTICITY"
+            ]
+          },
+          "field":  { "type": "string" },
+          "detail": { "type": "string" }
+        }
+      }
+    },
+    "rejections": {
+      "type": "array",
+      "description": "All rejection records. Non-empty when status is REJECTED.",
+      "items": {
+        "type": "object",
+        "required": ["rejection_type", "detail"],
+        "additionalProperties": false,
+        "properties": {
+          "rejection_type": {
+            "type": "string",
+            "enum": ["MALFORMED", "UNVERIFIABLE", "INCOMPLETE", "INCONSISTENT", "UNSUPPORTED", "HOSTILE"]
+          },
+          "field":  { "type": ["string", "null"] },
+          "detail": { "type": "string" }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "raw_ref": {
+      "type": ["object", "null"],
+      "description": "Optional raw input reference record.",
+      "properties": {
+        "retention_mode": {
+          "type": "string",
+          "enum": ["FULL", "HASHED", "REDACTED", "EXTERNAL_REF"]
+        },
+        "input_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "byte_length": { "type": "integer", "minimum": 0 },
+        "content": { "description": "Present only for FULL or REDACTED modes." },
+        "external_ref": { "type": ["string", "null"], "description": "URI for EXTERNAL_REF mode." },
+        "redaction_note": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

@@ -1,448 +1,307 @@
 Aletheia Practical Core
 
-Aletheia is a deterministic evidence ledger and verification system designed to record events, seal them cryptographically, and produce verifiable case bundles.
+Deterministic provenance and verification system for evidence bundles.
 
-It provides a structured way to capture events, validate claims against evidence, and export tamper-evident records that can be independently verified.
+Aletheia is designed for forensic-grade verification of event evidence. It produces bounded, deterministic verdicts and creates tamper-evident evidence bundles that can be independently verified.
 
-The system is designed to run in constrained environments, including mobile environments such as Termux.
-
-
----
-
-Current Status
-
-Phase 2 build.
-
-This repository currently contains a tested Phase-2 implementation.
-
-Verified characteristics:
-
-Runs on Python 3.12
-
-Runs on Termux / Android
-
-Portable filesystem layout
-
-Deterministic JSON canonicalization
-
-Cryptographically chained event ledger
-
-Window sealing with root hashes
-
-Case export and verification tooling
-
-HMAC signing support
-
-Adversarial and hostile input testing
-
-
-Test results:
-
-409 / 409 tests passing
-Full regression pack executed on-device.
-
+The system avoids hidden assumptions, silent failure modes, and probabilistic interpretation.
 
 ---
 
-Core Concepts
+## Core Principles
 
-Spine
+**Deterministic behaviour**  
 
-The Spine is the core event ledger.
+Given the same inputs, the system always produces the same outputs.
 
-Properties:
+**Bounded verdicts**  
 
-append-only event stream
+All verification returns one of four outcomes:
 
-cryptographic hash chain
+PASS / FAIL / ERROR / INCONCLUSIVE
 
-deterministic JSON encoding
+**Fail closed**  
 
-tamper detection
+Malformed or ambiguous inputs never produce a PASS.
 
-window-based sealing
+**Zero dependencies**  
 
+Core system runs on the Python standard library only.
 
-Each window produces a root hash representing the entire event sequence.
+**Tamper-evident storage**  
 
-
----
-
-Windows
-
-Events are grouped into windows.
-
-A window:
-
-1. opens
-
-
-2. accepts events
-
-
-3. seals
-
-
-4. produces a root hash
-
-
-
-Once sealed, a window cannot be modified.
-
+All evidence records are hash-linked.
 
 ---
 
-Case Export
+## Key Capabilities
 
-A sealed ledger can be exported as a case bundle.
+### Evidence bundles
 
-Case bundles contain:
+Evidence bundles contain:
 
-event files
+- evidence files  
 
-window metadata
+- a manifest  
 
-sealed root hashes
+- hashes for each file  
 
-manifest with file hashes
+- structural metadata  
 
-verification report
-
-
-These bundles can be independently verified.
-
+Bundles can be independently verified without trusting the original system.
 
 ---
 
-Claim System
+### Deterministic verification
 
-Aletheia allows claims to be made about evidence.
+The verification engine checks:
 
-Claims:
+- bundle structure  
 
-are stored as events
+- manifest integrity  
 
-reference evidence via cryptographic pins
+- file hashes  
 
-transition through lifecycle states
+- schema conformance  
 
+- deterministic verdict rules  
 
-Typical claim flow:
-
-proposed → witnessed → verified
-
-Claim verification ensures:
-
-referenced evidence exists
-
-transitions are valid
-
-evidence windows are sealed
-
-
+Verification produces a structured report.
 
 ---
 
-Detective
+### Bounded ingest gate
 
-The Detective module evaluates hypotheses against evidence.
+Incoming records pass through a strict ingest gate enforcing:
 
-Capabilities include:
+- maximum payload size  
 
-structured hypothesis evaluation
+- maximum nesting depth  
 
-coverage gates
+- deterministic canonicalisation  
 
-deterministic reasoning traces
+- schema validation  
 
-reproducible outputs
+- UTF-8 enforcement  
 
-
-Detective produces structured results containing:
-
-verdict
-
-pins
-
-reasoning metadata
-
-
+This prevents hostile or malformed inputs from corrupting the ledger.
 
 ---
 
-Ingest Gate
+### Spine ledger
 
-The ingest gate validates incoming records.
+The spine is an append-only hash-chained ledger.
 
-Validation includes:
+Each entry includes:
 
-schema checks
+- event type  
 
-payload depth limits
+- timestamp  
 
-payload size limits
+- payload  
 
-event type constraints
+- previous hash  
 
-source constraints
-
-reject logging
-
-
-Invalid records are rejected and logged.
-
+Tampering with past records invalidates the chain.
 
 ---
 
-Siren
+### Drift-locked verification
 
-The Siren state machine monitors system health.
+Evidence bundles are verified with a deterministic rule set.
 
-States include:
-
-NORMAL
-
-DEGRADED
-
-SUMMARIES_ONLY
-
-HALT
-
-
-Triggers include:
-
-disk pressure
-
-verification failures
-
-integrity compromise
-
-reject surges
-
-
-State transitions emit Mayday events into the ledger.
-
+Rules cannot silently change between runs.
 
 ---
 
-Sentinel
+## Adapter Framework
 
-Sentinel evaluates policy rules against proposed actions.
+Adapters allow external systems to feed events into Aletheia.
 
-It returns a verdict:
+Adapters convert external records into canonical Aletheia events.
 
-PASS
-FAIL
-INCONCLUSIVE
-UNAVAILABLE
+Supported adapters include:
 
-Policies may include:
+- JSON event streams  
 
-actor restrictions
+- file log ingestion  
 
-target restrictions
+- OT / sensor telemetry  
 
-risk levels
+- AI audit event capture  
 
-witness requirements
+Adapter results record:
 
+- accepted events  
 
+- rejected records  
 
----
+- loss information  
 
-Federation
-
-Federation allows multiple independent nodes to verify the same case.
-
-A federation result aggregates node results into a combined outcome.
-
-Each federation bundle includes:
-
-node case archives
-
-federation manifest
-
-federation hash
-
-federation result
-
-
+- canonical transformations  
 
 ---
 
-OT Adapter
+## Loss Accounting
 
-The OT adapter allows operational data streams (for example sensors) to be recorded into the spine.
+Aletheia never hides degraded information.
 
-Capabilities include:
+Loss events explicitly record:
 
-sensor reading ingestion
+- missing fields  
 
-quality tagging
+- ambiguous timestamps  
 
-fault detection
+- truncated content  
 
-window sealing
+- structural uncertainty  
 
-
-
----
-
-AI Audit Recorder
-
-The AI audit module records AI interaction events.
-
-Recorded data may include:
-
-request events
-
-response events
-
-latency
-
-model version
-
-constraint decisions
-
-human overrides
-
-
-This creates a verifiable audit trail of AI behaviour.
-
+Auditors can see exactly what information was lost during ingestion.
 
 ---
 
-Security Model
+## Project Structure
 
-Aletheia is designed around tamper evidence.
+aletheia/ adapters/        Universal adapter layer (JSON, file, AI audit, OT) claims/          Closed finite-state claims model chronicle/       Case bundle export detective/       Deterministic drift-locked sieve + ZipGuard ingest/          Bounded ingest gate spine/           Append-only hash-chained ledger siren/           Degrade-and-MAYDAY state machine veritas/         Epistemic session layer
 
-Security properties include:
+tools/ verify_case.py       Core verifier (stdlib only) verify_bundle.py     Bundle verifier (full report) validate_repo.py     One-command repository validation release_build.py     Deterministic release builder
 
-SHA-256 hash chaining
+tests/ Core deterministic test suite (228 tests)
 
-deterministic canonical JSON
+tests_adversarial/ Adversarial and scenario tests (461 tests)
 
-sealed windows
+examples/ Sample bundles (PASS / FAIL / ERROR)
 
-independent verification
+docs/ Full specification documents
 
-optional HMAC signing
+schemas/ JSON schemas
 
-hostile input protection
-
-ZIP extraction guards
-
-
-Verification tools detect:
-
-missing events
-
-altered payloads
-
-chain corruption
-
-manifest mismatches
-
-signature failures
-
-
+profiles/ Adapter mapping profiles
 
 ---
 
-Example Workflow
+## Running the system
 
-Basic flow:
+Install locally:
 
-start window
-append events
-seal window
-export case
-verify case
+pip install -e .
 
-Example command usage:
+Run repository validation:
 
-python aletheia_demo.py
+python tools/validate_repo.py
 
-Verify a case:
+This runs:
 
-python tools/verify_case.py path/to/case.zip
+selfcheck → core tests → adversarial tests → example verification
 
+If it exits successfully, the repository is validated.
 
 ---
 
-Running Tests
+## Test Coverage
 
-Full regression pack:
+Current validated counts:
 
-export PYTHONPATH=.
-python -m unittest discover -s tests409 -p "test_*.py"
+228 core deterministic tests 461 adversarial scenario tests 689 total tests
 
-Expected result:
+Coverage includes:
 
-409 tests
-OK
+- hostile zip files  
 
+- malformed manifests  
 
----
+- corrupted hashes  
 
-Directory Overview
+- path traversal attempts  
 
-aletheia/
- spine/
- claims/
- detective/
- ingest/
- siren/
- sentinel/
- federation/
- streaming/
- ai_audit/
- ot/
+- payload boundary violations  
 
-tools/
- verify_case.py
- release_pack.py
-
-tests/
-tests409/
-
+- ingestion failure modes  
 
 ---
 
-Design Goals
+## Example verification
 
-Aletheia aims to provide:
+Verify a clean bundle:
 
-deterministic behaviour
+python tools/verify_case.py examples/case_boundary_test.zip
 
-verifiable outputs
+Verify a tampered bundle:
 
-tamper-evident event recording
+python tools/verify_case.py examples/case_boundary_test_TAMPER2.zip
 
-portable execution
+Expected results:
 
-independent verification
-
-hostile-input resilience
-
-
+clean bundle → PASS tampered bundle → FAIL
 
 ---
 
-Limitations
+## Release
 
-Current limitations include:
+Create a deterministic release archive:
 
-RFC3161 timestamp signing not implemented
+python tools/release_build.py
 
-distributed federation still experimental
+This performs:
 
-performance tuning ongoing
+- validation  
 
+- artifact cleanup  
 
+- deterministic zip creation  
+
+- release manifest generation  
 
 ---
 
-Author
+## Security Model
 
-Damien Elliot Smith
+Aletheia assumes:
+
+- inputs may be hostile  
+
+- bundles may be tampered  
+
+- verification may run offline  
+
+- results must be reproducible  
+
+Therefore the system enforces:
+
+- bounded inputs  
+
+- deterministic processing  
+
+- explicit failure states  
+
+- append-only evidence recording  
+
+---
+
+## License
+
+Apache License 2.0
+
+---
+
+## Status
+
+Practical Core v1 Deterministic provenance system Full adversarial validation suite Adapter framework integrated Repository validation tooling active
+
+---
+
+## Purpose
+
+Aletheia provides a minimal deterministic foundation for evidence provenance systems where verification must remain reproducible, inspectable, and resistant to hidden manipulation.
+
+Once you paste this:
+
+1. Delete everything in the conflict editor
+
+2. Paste this
+
+3. Click Mark as resolved
+
+4. Click Commit merge
+
+5. Then Merge pull requests 

@@ -1,0 +1,33 @@
+{
+  "profile_id": "ai_audit_generic_v1",
+  "profile_version": "1.0",
+  "adapter_name": "ai_audit_adapter",
+  "source_name": "generic_ai_system",
+  "trust_level": "UNAUTHENTICATED_SOURCE",
+  "retention_mode": "HASHED",
+  "event_mappings": [
+    {
+      "event_type": "AI_INFERENCE_REQUEST",
+      "match_field": "record_type",
+      "match_value": "inference_request",
+      "field_mappings": [
+        { "source_field": "model",      "target_field": "model",      "required": true },
+        { "source_field": "session_id", "target_field": "session_id", "required": false },
+        { "source_field": "timestamp",  "target_field": "event_time", "required": false, "transform": "iso_utc" }
+      ],
+      "preserve_unknown": false
+    },
+    {
+      "event_type": "AI_INFERENCE_RESPONSE",
+      "match_field": "record_type",
+      "match_value": "inference_response",
+      "field_mappings": [
+        { "source_field": "model",        "target_field": "model",         "required": false },
+        { "source_field": "request_id",   "target_field": "request_id",    "required": false },
+        { "source_field": "finish_reason","target_field": "finish_reason",  "required": false },
+        { "source_field": "timestamp",    "target_field": "event_time",    "required": false, "transform": "iso_utc" }
+      ],
+      "preserve_unknown": false
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "aletheia-core"
+version = "1.0.0"
+description = "Deterministic provenance and integrity verification engine"
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+keywords = ["provenance", "integrity", "verification", "forensics", "determinism"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Security",
+    "Topic :: Scientific/Engineering",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = []  # stdlib only
+
+[project.scripts]
+aletheia-selfcheck = "aletheia_selfcheck:run_selfcheck"
+aletheia-verify    = "aletheia_verify:run_verify"
+aletheia-validate  = "tools.validate_repo:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["aletheia*", "tools*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.md", "*.txt"]

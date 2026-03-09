@@ -1,0 +1,22 @@
+{
+  "profile_id": "json_generic_v1",
+  "profile_version": "1.0",
+  "adapter_name": "json_adapter",
+  "source_name": "generic_json_source",
+  "trust_level": "UNAUTHENTICATED_SOURCE",
+  "retention_mode": "HASHED",
+  "event_mappings": [
+    {
+      "event_type": "GENERIC_EVENT",
+      "match_field": null,
+      "field_mappings": [
+        { "source_field": "source",     "target_field": "source",     "required": false, "fallback": "unknown" },
+        { "source_field": "event_type", "target_field": "event_type", "required": false, "fallback": "UNKNOWN" },
+        { "source_field": "message",    "target_field": "message",    "required": false },
+        { "source_field": "timestamp",  "target_field": "event_time", "required": false, "transform": "iso_utc" },
+        { "source_field": "level",      "target_field": "level",      "required": false, "transform": "str" }
+      ],
+      "preserve_unknown": true
+    }
+  ]
+}

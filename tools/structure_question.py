@@ -107,7 +107,8 @@ def main() -> None:
     if args.text is not None:
         raw = args.text
     else:
-        raw = open(args.file, "r", encoding="utf-8").read()
+        with open(args.file, "r", encoding="utf-8") as f:
+            raw = f.read()
 
     out = build_structured_question(raw)
     print(json.dumps(out, indent=2, sort_keys=True))
