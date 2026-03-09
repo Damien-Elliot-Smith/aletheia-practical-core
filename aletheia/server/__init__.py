@@ -118,6 +118,11 @@ class AletheiaServer:
         """Stop server and seal ledger cleanly."""
         if self._server:
             self._server.shutdown()
+            self._server.server_close()
+            self._server = None
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=2)
+        self._thread = None
         self.ledger.close_clean()
 
     def _make_handler(self):

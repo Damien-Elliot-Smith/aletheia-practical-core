@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "adapter_profile.schema.json",
+  "title": "Adapter Mapping Profile",
+  "description": "A configuration profile that tells an adapter how to map fields from an external system to canonical Aletheia events. Profiles may map fields but cannot invent certainty that the source did not provide.",
+  "type": "object",
+  "required": ["profile_id", "profile_version", "adapter_name", "source_name", "event_mappings"],
+  "additionalProperties": false,
+  "properties": {
+    "profile_id":      { "type": "string" },
+    "profile_version": { "type": "string" },
+    "adapter_name":    { "type": "string", "description": "Which adapter this profile targets." },
+    "source_name":     { "type": "string", "description": "Human name of the external system." },
+    "trust_level": {
+      "type": "string",
+      "enum": ["AUTHENTICATED_SOURCE", "OBSERVED_SOURCE", "UNAUTHENTICATED_SOURCE", "AMBIGUOUS_SOURCE"],
+      "default": "UNAUTHENTICATED_SOURCE"
+    },
+    "event_mappings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["event_type", "field_mappings"],
+        "additionalProperties": false,
+        "properties": {
+          "event_type": { "type": "string", "description": "Canonical event_type produced." },
+          "match_field": { "type": ["string", "null"], "description": "Input field used to select this mapping. Null = always." },
+          "match_value": { "description": "Value match_field must equal to trigger this mapping. Absent = always." },
+          "field_mappings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["source_field", "target_field"],
+              "additionalProperties": false,
+              "properties": {
+                "source_field": { "type": "string", "description": "Dot-path in source object. e.g. data.value" },
+                "target_field": { "type": "string", "description": "Key in canonical payload." },
+                "required":     { "type": "boolean", "default": false },
+                "fallback":     { "description": "Literal fallback value if field absent. Absence without fallback = LOSS_OF_COMPLETENESS." },
+                "transform":    {
+                  "type": ["string", "null"],
+                  "enum": [null, "str", "int", "float", "bool", "iso_utc"],
+                  "description": "Optional type coercion. Coercion failures = REJECTED/MALFORMED."
+                }
+              }
+            }
+          },
+          "preserve_unknown": {
+            "type": "boolean",
+            "default": false,
+            "description": "If true, unknown input fields are added to payload under _unknown key."
+          }
+        }
+      }
+    },
+    "retention_mode": {
+      "type": "string",
+      "enum": ["FULL", "HASHED", "REDACTED", "EXTERNAL_REF"],
+      "default": "HASHED"
+    }
+  }
+}

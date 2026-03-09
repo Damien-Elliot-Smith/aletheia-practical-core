@@ -412,6 +412,7 @@ class TestAletheiaServer(unittest.TestCase):
                 self.assertIn("siren_state", resp)
             finally:
                 srv.stop()
+                time.sleep(0.05)  # let OS reclaim port before next test
 
     def test_ingest_endpoint_accepts_valid_record(self):
         """POST /ingest accepts valid record."""
@@ -431,6 +432,7 @@ class TestAletheiaServer(unittest.TestCase):
                 self.assertTrue(resp["accepted"])
             finally:
                 srv.stop()
+                time.sleep(0.05)  # let OS reclaim port before next test
 
     def test_ingest_endpoint_rejects_invalid_record(self):
         """POST /ingest rejects record with missing required fields."""
@@ -450,6 +452,7 @@ class TestAletheiaServer(unittest.TestCase):
                 self.assertFalse(resp["accepted"])
             finally:
                 srv.stop()
+                time.sleep(0.05)  # let OS reclaim port before next test
 
     def test_verify_endpoint_returns_report(self):
         """GET /verify returns verification report."""
@@ -464,6 +467,7 @@ class TestAletheiaServer(unittest.TestCase):
                 self.assertIn("ok", resp)
             finally:
                 srv.stop()
+                time.sleep(0.05)  # let OS reclaim port before next test
 
     def test_siren_state_endpoint(self):
         """GET /siren/state returns current state."""
@@ -479,6 +483,7 @@ class TestAletheiaServer(unittest.TestCase):
                 self.assertEqual(resp["state"], "NORMAL")
             finally:
                 srv.stop()
+                time.sleep(0.05)  # let OS reclaim port before next test
 
     def test_windows_endpoint(self):
         """GET /windows lists open and sealed windows."""
@@ -495,6 +500,7 @@ class TestAletheiaServer(unittest.TestCase):
                 self.assertIn("total", resp)
             finally:
                 srv.stop()
+                time.sleep(0.05)  # let OS reclaim port before next test
 
     def test_seal_endpoint_seals_window(self):
         """POST /seal/<window_id> seals the window."""
@@ -516,6 +522,7 @@ class TestAletheiaServer(unittest.TestCase):
                 self.assertIn("window_root_hash", resp)
             finally:
                 srv.stop()
+                time.sleep(0.05)  # let OS reclaim port before next test
 
     def test_export_endpoint_returns_zip(self):
         """POST /export returns a zip file."""
@@ -548,6 +555,7 @@ class TestAletheiaServer(unittest.TestCase):
                 os.unlink(f_path)
             finally:
                 srv.stop()
+                time.sleep(0.05)  # let OS reclaim port before next test
 
     def test_unknown_endpoint_returns_404(self):
         """Unknown endpoint returns 404."""
@@ -566,6 +574,7 @@ class TestAletheiaServer(unittest.TestCase):
                     self.assertEqual(e.code, 404)
             finally:
                 srv.stop()
+                time.sleep(0.05)  # let OS reclaim port before next test
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

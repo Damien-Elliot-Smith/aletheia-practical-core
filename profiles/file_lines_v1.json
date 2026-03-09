@@ -1,0 +1,23 @@
+{
+  "profile_id": "file_lines_v1",
+  "profile_version": "1.0",
+  "adapter_name": "file_adapter",
+  "source_name": "generic_log_file",
+  "trust_level": "UNAUTHENTICATED_SOURCE",
+  "retention_mode": "HASHED",
+  "mode": "MIXED",
+  "event_mappings": [
+    {
+      "event_type": "LOG_LINE",
+      "match_field": null,
+      "field_mappings": [
+        { "source_field": "level",      "target_field": "level",   "required": false, "transform": "str" },
+        { "source_field": "message",    "target_field": "message", "required": false },
+        { "source_field": "logger",     "target_field": "logger",  "required": false },
+        { "source_field": "timestamp",  "target_field": "event_time", "required": false, "transform": "iso_utc" },
+        { "source_field": "host",       "target_field": "host",    "required": false }
+      ],
+      "preserve_unknown": true
+    }
+  ]
+}

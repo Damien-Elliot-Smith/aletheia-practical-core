@@ -3,3 +3,13 @@ __pycache__/
 sessions/
 *.pyc
 *.pyo
+
+# Generated reports / local artifacts
+*_report.json
+diag_*.json
+env.json
+env_TAMPER.json
+replay_*.json
+tool_*.json
+sa.json
+sq.json

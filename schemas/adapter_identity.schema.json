@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "adapter_identity.schema.json",
+  "title": "Adapter Identity",
+  "description": "Identity and capability record for a registered adapter. Used by the selfcheck tool and drift detection.",
+  "type": "object",
+  "required": ["adapter_name", "adapter_version", "default_trust_level", "signing_capability"],
+  "additionalProperties": false,
+  "properties": {
+    "adapter_name": {
+      "type": "string",
+      "description": "Stable adapter identifier. Never changes between versions."
+    },
+    "adapter_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semver version string."
+    },
+    "default_trust_level": {
+      "type": "string",
+      "enum": ["AUTHENTICATED_SOURCE", "OBSERVED_SOURCE", "UNAUTHENTICATED_SOURCE", "AMBIGUOUS_SOURCE"],
+      "description": "Default trust level assigned to events from this adapter."
+    },
+    "signing_capability": {
+      "type": "boolean",
+      "description": "True if this adapter can verify cryptographic signatures on inputs."
+    },
+    "supported_input_types": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Input format identifiers this adapter handles. e.g. [\"application/json\", \"text/plain\"]"
+    },
+    "max_input_bytes": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Maximum input size in bytes this adapter will process."
+    },
+    "phase": {
+      "type": "string",
+      "description": "Roadmap phase this adapter was introduced. e.g. Phase 3."
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "profile_id": "ot_sensor_generic_v1",
+  "profile_version": "1.0",
+  "adapter_name": "ot_adapter",
+  "source_name": "generic_ot_source",
+  "trust_level": "OBSERVED_SOURCE",
+  "retention_mode": "HASHED",
+  "event_mappings": [
+    {
+      "event_type": "OT_SENSOR_READING",
+      "match_field": "record_type",
+      "match_value": "sensor_reading",
+      "field_mappings": [
+        { "source_field": "device_id", "target_field": "device_id", "required": true },
+        { "source_field": "value",     "target_field": "value",     "required": true, "transform": "float" },
+        { "source_field": "unit",      "target_field": "unit",      "required": false, "fallback": null },
+        { "source_field": "quality",   "target_field": "quality",   "required": false, "fallback": "UNKNOWN" },
+        { "source_field": "timestamp", "target_field": "reading_time", "required": false, "transform": "iso_utc" }
+      ],
+      "preserve_unknown": false
+    }
+  ]
+}

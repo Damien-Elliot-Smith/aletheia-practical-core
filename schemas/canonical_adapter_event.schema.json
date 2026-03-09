@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "canonical_adapter_event.schema.json",
+  "title": "Canonical Adapter Event",
+  "description": "A single canonical event produced by an Aletheia adapter, ready for the Ingest Gate. Every field is required unless marked optional. No adapter may invent certainty that the source did not provide.",
+  "type": "object",
+  "required": ["source", "event_type", "payload", "adapter_meta"],
+  "additionalProperties": false,
+  "properties": {
+    "source": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Stable identifier for the data origin. Set by the adapter. Never coerced."
+    },
+    "event_type": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Canonical event type. Uppercase, underscored. e.g. SENSOR_READING, AI_INFERENCE_REQUEST."
+    },
+    "payload": {
+      "type": "object",
+      "description": "The canonical event payload. Contents are adapter-specific but must be JSON-safe. No NaN or Infinity."
+    },
+    "time_wall": {
+      "type": "string",
+      "description": "Optional ISO8601 UTC timestamp string (Z suffix). If absent, Spine assigns wall time.",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "adapter_meta": {
+      "type": "object",
+      "description": "Adapter provenance and trust metadata attached to every canonical event.",
+      "required": ["adapter_name", "adapter_version", "trust_level", "input_hash"],
+      "additionalProperties": false,
+      "properties": {
+        "adapter_name": {
+          "type": "string",
+          "description": "Stable adapter identifier. e.g. json_adapter, file_adapter."
+        },
+        "adapter_version": {
+          "type": "string",
+          "description": "Adapter version string. e.g. 1.0.0."
+        },
+        "trust_level": {
+          "type": "string",
+          "enum": ["AUTHENTICATED_SOURCE", "OBSERVED_SOURCE", "UNAUTHENTICATED_SOURCE", "AMBIGUOUS_SOURCE"],
+          "description": "Source authenticity classification for this event."
+        },
+        "input_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA256 hex of the raw input bytes this event was derived from."
+        },
+        "losses": {
+          "type": "array",
+          "description": "Zero or more loss records documenting what was degraded during translation.",
+          "items": { "$ref": "#/definitions/LossRecord" }
+        },
+        "warnings": {
+          "type": "array",
+          "description": "Non-fatal advisory notes about this event.",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "LossRecord": {
+      "type": "object",
+      "required": ["loss_type", "field", "detail"],
+      "additionalProperties": false,
+      "properties": {
+        "loss_type": {
+          "type": "string",
+          "enum": [
+            "LOSS_OF_PRECISION",
+            "LOSS_OF_STRUCTURE",
+            "LOSS_OF_COMPLETENESS",
+            "LOSS_OF_CAUSAL_LINKAGE",
+            "LOSS_OF_AUTHENTICITY"
+          ]
+        },
+        "field": { "type": "string", "description": "The field or path that suffered loss." },
+        "detail": { "type": "string", "description": "Human-readable explanation of the loss." }
+      }
+    }
+  }
+}
