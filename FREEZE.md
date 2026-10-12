@@ -8,7 +8,8 @@
 A frozen, stable snapshot intended to remain unchanged.
 
 ## Integrity
-See `SHA256SUMS.txt` for file hashes.
+See `SHA256SUMS.txt` for hashes of every tracked file (`sha256sum -c SHA256SUMS.txt`).
+It is regenerated from the current tree with `python tools/gen_sha256sums.py`, and a test fails if it is stale.
 
 ## Run quick checks
 

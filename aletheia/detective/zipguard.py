@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import posixpath
+import unicodedata
 import zipfile
 from dataclasses import dataclass
 from typing import List
@@ -49,18 +50,53 @@ def _normalize_zip_relpath(name: str, limits: ZipLimits) -> str:
     if "\\" in name:
         raise ZipGuardError(R.ERR_PATH_TRAVERSAL, f"backslash in path: {name}")
 
-    norm = posixpath.normpath(name)
-    if norm in (".", ""):
-        raise ZipGuardError(R.ERR_BAD_PATH, f"empty path: {name}")
-
-    parts = norm.split("/")
+    # Segments are checked on the raw name, not after normpath: normpath folds
+    # "a//b" and "a/./b" into "a/b", which would let two distinct entries
+    # extract to the same file. Only canonical names are accepted, so the
+    # extraction path is always the entry name itself.
+    parts = name.split("/")
     if any(p == ".." for p in parts):
         raise ZipGuardError(R.ERR_PATH_TRAVERSAL, f"traversal: {name}")
 
     if any(p in ("", ".") for p in parts):
-        raise ZipGuardError(R.ERR_BAD_PATH, f"weird segments: {name}")
+        raise ZipGuardError(R.ERR_BAD_PATH, f"non-canonical segments: {name}")
+
+    norm = posixpath.normpath(name)
+    if norm != name:
+        raise ZipGuardError(R.ERR_BAD_PATH, f"non-canonical path: {name}")
 
     return norm
+
+
+def _collision_key(rel_path: str) -> str:
+    # Case and Unicode normalization are folded: "A.txt" and "a.txt" (or NFC and
+    # NFD spellings of the same name) land on one file on case-insensitive or
+    # normalizing filesystems (Windows, macOS), so the same bundle would extract
+    # differently depending on where it is verified.
+    return unicodedata.normalize("NFC", rel_path).casefold()
+
+
+def _check_collisions(file_paths: List[str], dir_paths: List[str]) -> None:
+    files: dict = {}
+    for rel in file_paths:
+        key = _collision_key(rel)
+        if key in files:
+            raise ZipGuardError(R.ERR_PATH_COLLISION, f"collision: {files[key]} <-> {rel}")
+        files[key] = rel
+
+    # Every parent of a file, plus explicit directory entries, is a directory.
+    dirs: dict = {}
+    for rel in dir_paths:
+        dirs.setdefault(_collision_key(rel), rel)
+    for rel in file_paths:
+        parts = rel.split("/")
+        for i in range(1, len(parts)):
+            parent = "/".join(parts[:i])
+            dirs.setdefault(_collision_key(parent), parent)
+
+    for key in sorted(files):
+        if key in dirs:
+            raise ZipGuardError(R.ERR_PATH_COLLISION, f"file/directory collision: {files[key]} <-> {dirs[key]}/")
 
 
 def build_extraction_plan(zip_path: str, limits: ZipLimits) -> List[ZipMemberPlan]:
@@ -83,11 +119,14 @@ def build_extraction_plan(zip_path: str, limits: ZipLimits) -> List[ZipMemberPla
                     raise ZipGuardError(R.ERR_BAD_ZIP, f"duplicate entry: {info.filename}")
                 seen_names.add(info.filename)
 
+            dir_paths: List[str] = []
             for info in infos:
                 name = info.filename
 
-                # directory entries
+                # directory entries: never extracted, but their names must be
+                # safe and canonical, and they take part in collision checks
                 if name.endswith("/"):
+                    dir_paths.append(_normalize_zip_relpath(name[:-1], limits))
                     continue
 
                 count += 1
@@ -110,6 +149,8 @@ def build_extraction_plan(zip_path: str, limits: ZipLimits) -> List[ZipMemberPla
                 rel = _normalize_zip_relpath(name, limits)
                 plans.append(ZipMemberPlan(zip_name=name, rel_path=rel, file_size=info.file_size))
 
+            _check_collisions([p.rel_path for p in plans], dir_paths)
+
     except zipfile.BadZipFile as e:
         raise ZipGuardError(R.ERR_BAD_ZIP, str(e))
     except zipfile.LargeZipFile as e:
@@ -127,7 +168,7 @@ def safe_extract(zip_path: str, extract_root: str, plans: List[ZipMemberPlan]) -
                 raise ZipGuardError(R.ERR_PATH_TRAVERSAL, f"escape: {p.rel_path}")
 
             os.makedirs(os.path.dirname(out_path), exist_ok=True)
-            with zf.open(p.zip_name, "r") as src, open(out_path, "wb") as dst:
+            with zf.open(p.zip_name, "r") as src, open(out_path, "xb") as dst:  # never overwrite a file already extracted
                 while True:
                     chunk = src.read(1024 * 1024)
                     if not chunk:
