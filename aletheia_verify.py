@@ -70,6 +70,8 @@ REASON_EXPLANATIONS = {
     "ERR_BAD_ZIP":              "The zip file is corrupt or truncated.",
     "ERR_PATH_TRAVERSAL":       "The zip contains an unsafe path (path traversal attack).",
     "ERR_SYMLINK":              "The zip contains a symlink, which is not permitted.",
+    "ERR_PATH_COLLISION":       "Two zip entries would extract to the same path (including case-only differences).",
+    "ERR_BAD_PATH":             "The zip contains an empty or non-canonical path (e.g. 'a//b' or 'a/./b').",
     "ERR_FILE_COUNT_LIMIT":     "The zip contains too many files.",
     "ERR_SIZE_LIMIT":           "A file in the zip exceeds the size limit.",
     "ERR_HASH_MISMATCH":        "A file's content does not match its recorded hash.",
