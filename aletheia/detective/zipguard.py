@@ -69,11 +69,13 @@ def _normalize_zip_relpath(name: str, limits: ZipLimits) -> str:
 
 
 def _collision_key(rel_path: str) -> str:
-    # Case and Unicode normalization are folded: "A.txt" and "a.txt" (or NFC and
-    # NFD spellings of the same name) land on one file on case-insensitive or
-    # normalizing filesystems (Windows, macOS), so the same bundle would extract
-    # differently depending on where it is verified.
-    return unicodedata.normalize("NFC", rel_path).casefold()
+    # Unicode normalization is folded: NFC and NFD spellings of the same name
+    # are the same name to a reader and land on one file on normalizing
+    # filesystems (macOS). Case is deliberately NOT folded: "A.txt" and "a.txt"
+    # are distinct entries. On a case-insensitive filesystem safe_extract
+    # refuses to overwrite, so such a bundle fails extraction loudly there
+    # instead of silently clobbering one entry with the other.
+    return unicodedata.normalize("NFC", rel_path)
 
 
 def _check_collisions(file_paths: List[str], dir_paths: List[str]) -> None:
@@ -168,7 +170,12 @@ def safe_extract(zip_path: str, extract_root: str, plans: List[ZipMemberPlan]) -
                 raise ZipGuardError(R.ERR_PATH_TRAVERSAL, f"escape: {p.rel_path}")
 
             os.makedirs(os.path.dirname(out_path), exist_ok=True)
-            with zf.open(p.zip_name, "r") as src, open(out_path, "xb") as dst:  # never overwrite a file already extracted
+            try:
+                dst = open(out_path, "xb")  # never overwrite a file already extracted
+            except FileExistsError:
+                # e.g. "A.txt" and "a.txt" on a case-insensitive filesystem
+                raise ZipGuardError(R.ERR_PATH_COLLISION, f"already extracted: {p.rel_path}")
+            with zf.open(p.zip_name, "r") as src, dst:
                 while True:
                     chunk = src.read(1024 * 1024)
                     if not chunk:

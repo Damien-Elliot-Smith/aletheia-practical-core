@@ -87,8 +87,8 @@ def test_single_file_limit(tmp_path):
 # --- Path collisions and non-canonical names --------------------------------
 # Two entries that extract to the same file let a bundle carry content the
 # verifier never looked at. Names must be canonical, and names that collide
-# after case/Unicode folding are rejected so the result does not depend on
-# the filesystem the bundle is verified on.
+# after Unicode (NFC) normalization are rejected. Case-only differences are
+# allowed; safe_extract refuses to overwrite if a filesystem folds them together.
 
 def _plan_error(tmp_path, names):
     p = tmp_path / "c.zip"
@@ -116,19 +116,26 @@ def test_traversal_hidden_in_middle_rejected(tmp_path):
     assert _plan_error(tmp_path, ["a/../b.txt"]) == R.ERR_PATH_TRAVERSAL
 
 
-@pytest.mark.parametrize("names", [
-    ["A.txt", "a.txt"],
-    ["docs/README.md", "DOCS/readme.md"],
-    ["café.txt", "café.txt"],  # NFC vs NFD
-])
-def test_case_and_unicode_collisions_rejected(tmp_path, names):
+def test_unicode_normalization_collision_rejected(tmp_path):
+    names = ["caf\u00e9.txt", "cafe\u0301.txt"]  # NFC vs NFD
     assert _plan_error(tmp_path, names) == R.ERR_PATH_COLLISION
 
 
 @pytest.mark.parametrize("names", [
-    ["a", "a/b.txt"],
+    ["A.txt", "a.txt"],
+    ["docs/README.md", "DOCS/readme.md"],
     ["A", "a/b.txt"],
-    ["a/", "A"],
+])
+def test_case_only_differences_accepted(tmp_path, names):
+    p = tmp_path / "case.zip"
+    _make_zip(str(p), [(n, b"x", None) for n in names])
+    plans = build_extraction_plan(str(p), ZipLimits())
+    assert sorted(x.rel_path for x in plans) == sorted(names)
+
+
+@pytest.mark.parametrize("names", [
+    ["a", "a/b.txt"],
+    ["a/", "a"],
 ])
 def test_file_directory_collisions_rejected(tmp_path, names):
     assert _plan_error(tmp_path, names) == R.ERR_PATH_COLLISION
@@ -148,8 +155,9 @@ def test_safe_extract_never_overwrites(tmp_path):
     # A hand-built plan that maps two entries onto one file must fail, not overwrite.
     plans = [ZipMemberPlan("a.txt", "x.txt", 5), ZipMemberPlan("b.txt", "x.txt", 6)]
     out = tmp_path / "out"
-    with pytest.raises(FileExistsError):
+    with pytest.raises(ZipGuardError) as e:
         safe_extract(str(p), str(out), plans)
+    assert e.value.reason_code == R.ERR_PATH_COLLISION
     assert (out / "x.txt").read_bytes() == b"first"
 
 
